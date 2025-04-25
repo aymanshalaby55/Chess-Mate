@@ -22,4 +22,17 @@ const api = axios.create({
   },
 });
 
+// Add a request interceptor to handle errors consistently
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle authentication errors or network errors
+    if (error.response?.status === 401) {
+      console.error("Authentication error:", error);
+      // You could redirect to login page here if needed
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

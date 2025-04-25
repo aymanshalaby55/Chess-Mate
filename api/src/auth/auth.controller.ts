@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  UseGuards,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Res, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -41,28 +35,40 @@ export class AuthController {
     const user = req.user;
     // After successful Google authentication, get login data
     const authResult = this.authService.googleLogin(user);
-    
+
     // Using Promise.resolve to handle both Promise and non-Promise returns
-    Promise.resolve(authResult).then((result) => {
+    void Promise.resolve(authResult).then((result) => {
       // Check if result is a string (error message)
       if (typeof result === 'string') {
-        return res.redirect(`http://localhost:3000/login?error=${encodeURIComponent(result)}`);
+        return res.redirect(
+          `http://localhost:3000/login?error=${encodeURIComponent(result)}`,
+        );
       }
-      
+
       const authData = result as AuthResult;
-      
-      // Encode the user data to safely include in URL
-      const userData = encodeURIComponent(JSON.stringify(authData.user));
       const token = authData.access_token;
-      
-      // Redirect to frontend with token and user data
-      return res.redirect(`http://localhost:3000?token=${token}&user=${userData}`);
+
+      // Set JWT token in HTTP-only cookie
+      res.cookie('accesstoken', token);
+
+      // Encode only the user data for URL (not the token)
+      const userData = encodeURIComponent(JSON.stringify(authData.user));
+
+      // Redirect to frontend with only user data in URL
+      return res.redirect(`http://localhost:3000/dashboard`);
     });
   }
 
-  @Get('profile')
+  @Get('user-data')
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Req() req: Request) {
+    
     return req.user;
+  }
+
+  @Post('logout')
+  logout(@Res() res: Response) {
+    res.clearCookie('accesstoken');
+    return res.send({ message: 'Logged out successfully' });
   }
 }

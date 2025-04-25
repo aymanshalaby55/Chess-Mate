@@ -49,11 +49,15 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
+      // Call the logout endpoint which will clear the cookie
       await api.post("/auth/logout");
+      // Clear local user data
       setUser(null);
       if (typeof window !== "undefined") {
         localStorage.removeItem("user");
       }
+      // Redirect to home or login page
+      window.location.href = "/";
     } catch (error) {
       console.error("Logout Error:", error);
     } finally {
@@ -61,31 +65,32 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Effect to load user from localStorage on startup
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          console.error("Failed to parse stored user", e);
+          localStorage.removeItem("user");
+        }
       }
     }
   }, []);
 
-  // Add a function to handle the callback from Google OAuth
+  // Effect to handle URL parameters from OAuth callback
   useEffect(() => {
-    // Check if this is a callback from Google OAuth
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get("token");
       const userData = urlParams.get("user");
       
-      if (token && userData) {
+      if (userData) {
         try {
           const parsedUser = JSON.parse(decodeURIComponent(userData));
           setUser(parsedUser);
-          localStorage.setItem("user", JSON.stringify({
-            ...parsedUser,
-            token
-          }));
+          localStorage.setItem("user", JSON.stringify(parsedUser));
           // Clear the URL parameters
           window.history.replaceState({}, document.title, window.location.pathname);
         } catch (error) {
@@ -96,6 +101,32 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
   }, []);
+
+  // Effect to check auth status periodically
+  useEffect(() => {
+    // Function to check if user is still authenticated
+    const checkAuthStatus = async () => {
+      if (!user) return;
+      
+      try {
+        // Make a request to a protected endpoint
+        await api.get("/auth/profile");
+      } catch (error) {
+        // If 401 Unauthorized, clear user data
+        if ((error as any)?.response?.status === 401) {
+          setUser(null);
+          localStorage.removeItem("user");
+          toast("Your session has expired. Please log in again.");
+        }
+      }
+    };
+    
+    // Check auth status every 5 minutes
+    const interval = setInterval(checkAuthStatus, 5 * 60 * 1000);
+    
+    // Clear interval on unmount
+    return () => clearInterval(interval);
+  }, [user]);
 
   return (
     <UserContext.Provider value={{ user, login, loading, logout, setUser }}>

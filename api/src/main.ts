@@ -1,9 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import * as cookieParser from 'cookie-parser';
+import * as morgan from 'morgan';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // Enable HTTP request logging
+  app.use(morgan('dev'));
+  
+  // Enable cookie parser middleware
+  app.use(cookieParser());
   
   // Enable CORS for frontend requests
   app.enableCors({
@@ -24,7 +32,7 @@ async function bootstrap() {
   );
   
   // Start the server
-  await app.listen(process.env.PORT ?? 5000);
+  await app.listen(process.env.PORT ?? 4040);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();

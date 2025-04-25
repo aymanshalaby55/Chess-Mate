@@ -1,3 +1,4 @@
+import { UserProvider } from "../context/UserContext"
 
 export const metadata = {
   title: 'Next.js',
@@ -11,7 +12,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body> <UserProvider>{children}</UserProvider></body>
     </html>
   )
 }

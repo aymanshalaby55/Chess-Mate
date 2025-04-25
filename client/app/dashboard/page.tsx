@@ -1,9 +1,16 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Trophy, Users, Bell } from "lucide-react"
-import HeroChessboard from "@/components/shared/HeroChessBoard"
+"use client";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Trophy, Users, Bell } from "lucide-react";
+import HeroChessboard from "@/components/shared/HeroChessBoard";
+import { useEffect } from "react";
+import api from "@/lib/api";
 
 export default function DashboardPage() {
+  useEffect(async () => {
+    const data = await api.get("/user/info");
+    console.log(data);
+  });
   return (
     <div className="min-h-screen bg-black text-white">
       <header className="border-b border-zinc-800 bg-zinc-950">
@@ -16,7 +23,11 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative text-zinc-400 hover:text-white">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-zinc-400 hover:text-white"
+              >
                 <Bell className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 text-[10px] flex items-center justify-center">
                   3
@@ -28,7 +39,11 @@ export default function DashboardPage() {
                 </div>
                 <span className="text-sm">Guest User</span>
               </div>
-              <Button variant="outline" size="sm" className="border-zinc-700 hover:bg-zinc-800">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-zinc-700 hover:bg-zinc-800"
+              >
                 <Link href="/">Sign Out</Link>
               </Button>
             </div>
@@ -38,7 +53,10 @@ export default function DashboardPage() {
 
       <main className="container mx-auto max-w-6xl px-4 py-8">
         <div className="mb-8">
-          <Link href="/" className="text-green-400 flex items-center hover:underline text-sm">
+          <Link
+            href="/"
+            className="text-green-400 flex items-center hover:underline text-sm"
+          >
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back to Home
           </Link>
@@ -64,7 +82,9 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="font-medium">vs. BlackMaster</div>
-                      <div className="text-xs text-zinc-400">Won • 32 moves • 15 min ago</div>
+                      <div className="text-xs text-zinc-400">
+                        Won • 32 moves • 15 min ago
+                      </div>
                     </div>
                   </div>
                   <div className="text-green-400 font-bold">+15</div>
@@ -77,7 +97,9 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="font-medium">vs. ChessWizard</div>
-                      <div className="text-xs text-zinc-400">Lost • 28 moves • 2 hours ago</div>
+                      <div className="text-xs text-zinc-400">
+                        Lost • 28 moves • 2 hours ago
+                      </div>
                     </div>
                   </div>
                   <div className="text-red-400 font-bold">-12</div>
@@ -90,7 +112,9 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <div className="font-medium">vs. GrandMaster42</div>
-                      <div className="text-xs text-zinc-400">Draw • 45 moves • Yesterday</div>
+                      <div className="text-xs text-zinc-400">
+                        Draw • 45 moves • Yesterday
+                      </div>
                     </div>
                   </div>
                   <div className="text-zinc-400 font-bold">+2</div>
@@ -143,8 +167,12 @@ export default function DashboardPage() {
                   <h2 className="font-bold text-lg">Play Now</h2>
                   <Users className="h-5 w-5 text-green-400" />
                 </div>
-                <p className="text-zinc-400 text-sm mb-4">Find an opponent and start a new game</p>
-                <Button className="w-full bg-green-600 hover:bg-green-700">Find Match</Button>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Find an opponent and start a new game
+                </p>
+                <Button className="w-full bg-green-600 hover:bg-green-700">
+                  Find Match
+                </Button>
               </div>
 
               <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800 hover:border-green-800 transition-colors">
@@ -152,8 +180,13 @@ export default function DashboardPage() {
                   <h2 className="font-bold text-lg">Tournaments</h2>
                   <Trophy className="h-5 w-5 text-green-400" />
                 </div>
-                <p className="text-zinc-400 text-sm mb-4">Join competitive tournaments and win prizes</p>
-                <Button variant="outline" className="w-full border-green-600 text-green-400 hover:bg-green-950">
+                <p className="text-zinc-400 text-sm mb-4">
+                  Join competitive tournaments and win prizes
+                </p>
+                <Button
+                  variant="outline"
+                  className="w-full border-green-600 text-green-400 hover:bg-green-950"
+                >
                   Browse Tournaments
                 </Button>
               </div>
@@ -162,5 +195,5 @@ export default function DashboardPage() {
         </div>
       </main>
     </div>
-  )
+  );
 }
