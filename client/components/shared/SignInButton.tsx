@@ -17,7 +17,6 @@ const SignInButton = () => {
     try {
       const data = await login();
       console.log(data);
-      return data;
     } catch (error) {
       console.error('Authentication error:', error);
     } finally {

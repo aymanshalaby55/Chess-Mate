@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-google-oauth20';
+import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../../user/user.service';
 
@@ -22,11 +22,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: any,
-    done: any,
+    done: VerifyCallback,
   ): Promise<any> {
     const { id, name, emails, photos } = profile;
 
-    const email= emails[0].value;
+    const email = emails[0].value;
     const picture = photos[0].value;
     const googleProfile = {
       accessToken,
@@ -34,31 +34,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       profile,
     };
 
-    // Check if user exists in database
-    let user = await this.userService.findByGoogleId(id);
+    const user = {
+      id,
+      email: emails[0].value,
+      name: name.givenName,
+      accessToken,
+      refreshToken,
+    };
 
-    // If user doesn't exist, check if email is already registered
-    if (!user) {
-      const existingUser = await this.userService.findByEmail(email);
-
-      if (existingUser) {
-        // Update existing user with Google info
-        user = await this.userService.updateUser(existingUser.id, {
-          googleId: id,
-          googleProfile,
-          picture,
-        });
-      } else {
-        // Create new user
-        user = await this.userService.createUser({
-          email,
-          name: name.givenName + ' ' + name.familyName,
-          googleId: id,
-          googleProfile,
-          picture,
-        });
-      }
-    }
+    console.log(user);
 
     done(null, user);
   }

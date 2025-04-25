@@ -12,22 +12,22 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<any> {
     const user = await this.userService.findByEmail(email);
-    
+
     if (user && user.password) {
       const isPasswordValid = await argon2.verify(user.password, password);
-      
+
       if (isPasswordValid) {
         const { password, ...result } = user;
         return result;
       }
     }
-    
+
     return null;
   }
 
   async login(user: any) {
     const payload = { email: user.email, sub: user.id };
-    
+
     return {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -39,11 +39,11 @@ export class AuthService {
     };
   }
 
-  async googleLogin(req: any) {
-    if (!req.user) {
-      return 'No user from Google';
+  async googleLogin(user: any) {
+    if (user) {
+      return user;
     }
 
-    return this.login(req.user);
+    return this.login(user);
   }
-} 
+}

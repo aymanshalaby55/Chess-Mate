@@ -15,7 +15,7 @@ if (typeof window !== "undefined") {
 //     : process.env.NEXT_PUBLIC_API_BASE_URL_REMOTE;
 
 const api = axios.create({
-  baseURL: "https://localhost:4040/",
+  baseURL: "http://localhost:4040/api",
   withCredentials: true,
   headers: {
     Authorization: parsedToken ? `Bearer ${parsedToken}` : undefined,
