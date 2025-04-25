@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
-import { UserService } from '../user/user.service';
+import { UserService } from '../../user/user.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -25,8 +25,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: any,
   ): Promise<any> {
     const { id, name, emails, photos } = profile;
-    
-    const email = emails[0].value;
+
+    const email= emails[0].value;
     const picture = photos[0].value;
     const googleProfile = {
       accessToken,
@@ -40,7 +40,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     // If user doesn't exist, check if email is already registered
     if (!user) {
       const existingUser = await this.userService.findByEmail(email);
-      
+
       if (existingUser) {
         // Update existing user with Google info
         user = await this.userService.updateUser(existingUser.id, {
@@ -62,4 +62,4 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     done(null, user);
   }
-} 
+}

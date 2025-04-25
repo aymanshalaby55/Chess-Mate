@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: chessmate_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: chessmate
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    container_name: chessmate_api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "4040:4040"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/chessmate?schema=public
+      - JWT_SECRET=your_jwt_secret_key_here
+      - JWT_EXPIRATION=1h
+      - GOOGLE_CLIENT_ID=1050294624093-uoajj2rc1b7jb13smloi1sdj9no3l1o5.apps.googleusercontent.com
+      - GOOGLE_CLIENT_SECRET=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
+      - GOOGLE_CALLBACK_URL=http://localhost:4040/api/auth/google/callback
+    depends_on:
+      - db
+
+  client:
+    container_name: chessmate_client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4040
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

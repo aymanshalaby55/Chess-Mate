@@ -36,46 +36,9 @@ export class AuthController {
     return this.authService.googleLogin(req);
   }
 
-  @Post('signup')
-  async signup(@Body() signupDto: SignUpDto) {
-    // Check if user already exists
-    const existingUser = await this.userService.findByEmail(signupDto.email);
-    if (existingUser) {
-      throw new ConflictException('Email already in use');
-    }
-
-    // Create new user
-    const newUser = await this.userService.createUser({
-      email: signupDto.email,
-      password: signupDto.password,
-      name: signupDto.name,
-    });
-
-    // Remove sensitive data from response
-    const { password: _, ...userWithoutPassword } = newUser;
-    
-    // Return user with token
-    return this.authService.login(userWithoutPassword);
-  }
-
-  @Post('signin')
-  @HttpCode(HttpStatus.OK)
-  async signIn(@Body() signInDto: SignInDto) {
-    const user = await this.authService.validateUser(
-      signInDto.email,
-      signInDto.password,
-    );
-    
-    if (!user) {
-      return { statusCode: 401, message: 'Invalid credentials' };
-    }
-    
-    return this.authService.login(user);
-  }
-
   @Get('profile')
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Req() req: Request) {
     return req.user;
   }
-} 
+}
