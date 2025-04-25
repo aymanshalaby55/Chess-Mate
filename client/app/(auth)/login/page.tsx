@@ -1,71 +1,70 @@
-"use client";
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import SignInButton from '@/components/shared/SignInButton';
 
-import { useState } from "react";
+export const metadata: Metadata = {
+  title: 'Sign In - Chess Masters',
+  description: 'Sign in to your Chess Masters account',
+};
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-  };
-
+export default function SignInPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-white text-center">
-          Login to Chess
-        </h2>
-        {error && (
-          <div className="bg-red-500 text-white p-2 rounded mb-4 text-sm">
-            {error}
+    <div className="flex min-h-screen bg-black text-white">
+      <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto px-4">
+        <Link
+          href="/"
+          className="flex items-center text-sm text-green-400 mb-8 hover:underline"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          Back to home
+        </Link>
+
+        <div className="w-full space-y-6 bg-zinc-900 p-8 rounded-lg border border-zinc-800">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold">Welcome to Chess Masters</h1>
+            <p className="text-zinc-400">Sign in to continue to your account</p>
           </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
-              required
-            />
+
+          <div className="space-y-4">
+            <SignInButton />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-zinc-700" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-zinc-900 px-2 text-zinc-400">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full border-zinc-700 hover:bg-zinc-800 hover:text-white"
+              >
+                Play as Guest
+              </Button>
+              <p className="text-xs text-center text-zinc-500">
+                Limited features available in guest mode
+              </p>
+            </div>
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-green-500 focus:border-green-500"
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-          >
-            Login
-          </button>
-        </form>
-        <div className="mt-6">
-          <button
-            onClick={() => signIn("google")}
-            className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 py-2 px-4 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-          >
-            <FcGoogle className="w-5 h-5" />
-            Continue with Google
-          </button>
         </div>
+
+        <p className="mt-6 text-center text-sm text-zinc-500">
+          By signing in, you agree to our{' '}
+          <Link href="#" className="text-green-400 hover:underline">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link href="#" className="text-green-400 hover:underline">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </div>
   );
