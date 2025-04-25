@@ -1,13 +1,13 @@
-'use client';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trophy, Users } from 'lucide-react';
-import HeroChessboard from '@/components/shared/HeroChessBoard';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUserContext } from '@/app/context/UserContext';
-import api from '@/lib/api';
-import { toast } from 'sonner';
+"use client";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Trophy, Users } from "lucide-react";
+import HeroChessboard from "@/components/shared/HeroChessBoard";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useUserContext } from "@/app/context/UserContext";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
 interface UserData {
   name: string;
@@ -25,12 +25,12 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await api.get('/user/info');
+        const { data } = await api.get("/user/info");
         setUserData(data);
       } catch {
-        router.push('/login');
+        router.push("/login");
         toast.error("Can't login. Please try again.", {
-          style: { color: 'black', backgroundColor: 'white' },
+          style: { color: "black", backgroundColor: "white" },
         });
       }
     };
@@ -40,9 +40,9 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/login');
+      router.push("/login");
     } catch (error) {
-      console.error('Failed to logout', error);
+      console.error("Failed to logout", error);
     }
   };
 
@@ -59,8 +59,18 @@ export default function DashboardPage() {
 
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-2">
-                <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
-                  {userData?.picture}
+                <div className="relative h-8 w-8">
+                  {userData?.picture ? (
+                    <img
+                      src={userData.picture}
+                      alt="Profile"
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
+                      {userData?.name?.charAt(0)}
+                    </div>
+                  )}
                 </div>
                 <span className="text-sm">{userData?.name}</span>
               </div>
