@@ -7,27 +7,13 @@ import * as argon2 from 'argon2';
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findByEmail(email: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
+  async getUserData(email: string): Promise<User | null> {
+     const userData = await this.prisma.user.findUnique({
       where: { email },
     });
-  }
 
-  async findByGoogleId(googleId: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({
-      where: { googleId },
-    });
-  }
-
-  async createUser(data: Prisma.UserCreateInput): Promise<User> {
-    // Hash password if provided
-    if (data.password) {
-      data.password = await argon2.hash(data.password);
-    }
-
-    return await this.prisma.user.create({
-      data,
-    });
+    console.log(userData)
+    return userData;
   }
 
   async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {

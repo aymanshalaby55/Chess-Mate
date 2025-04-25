@@ -10,9 +10,11 @@ export class UserController {
   @Get('info')
   @UseGuards(AuthGuard('jwt'))
   getUserInfo(@Req() req: Request) {
+    const user: any = req.user;
+    console.log(user)
     // The JWT guard already validated the token and attached the user to the request
-    const user = req.user;
-
-    return user;
+    const userData  = this.userService.getUserData(user.email);
+    console.log(userData);
+    return req ;
   }
 }

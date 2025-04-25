@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { AxiosError } from "axios";
 
 interface User {
   id: string;
@@ -113,7 +114,7 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
         await api.get("/auth/profile");
       } catch (error) {
         // If 401 Unauthorized, clear user data
-        if ((error as any)?.response?.status === 401) {
+        if ((error as AxiosError)?.response?.status === 401) {
           setUser(null);
           localStorage.removeItem("user");
           toast("Your session has expired. Please log in again.");

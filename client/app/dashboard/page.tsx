@@ -1,16 +1,51 @@
-"use client";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trophy, Users, Bell } from "lucide-react";
-import HeroChessboard from "@/components/shared/HeroChessBoard";
-import { useEffect } from "react";
-import api from "@/lib/api";
+'use client';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Trophy, Users } from 'lucide-react';
+import HeroChessboard from '@/components/shared/HeroChessBoard';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUserContext } from '@/app/context/UserContext';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+
+interface UserData {
+  name: string;
+  email: string;
+  picture?: string;
+}
 
 export default function DashboardPage() {
-  useEffect(async () => {
-    const data = await api.get("/user/info");
-    console.log(data);
-  });
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const router = useRouter();
+  const { logout } = useUserContext();
+
+  console.log(userData);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data } = await api.get('/user/info');
+        setUserData(data);
+      } catch {
+        router.push('/login');
+        toast.error("Can't login. Please try again.", {
+          style: { color: 'black', backgroundColor: 'white' },
+        });
+      }
+    };
+    fetchData();
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Failed to logout', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <header className="border-b border-zinc-800 bg-zinc-950">
@@ -23,28 +58,19 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative text-zinc-400 hover:text-white"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 text-[10px] flex items-center justify-center">
-                  3
-                </span>
-              </Button>
               <div className="hidden md:flex items-center gap-2">
                 <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
-                  G
+                  {userData?.picture}
                 </div>
-                <span className="text-sm">Guest User</span>
+                <span className="text-sm">{userData?.name}</span>
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 className="border-zinc-700 hover:bg-zinc-800"
+                onClick={handleLogout}
               >
-                <Link href="/">Sign Out</Link>
+                Sign Out
               </Button>
             </div>
           </div>
@@ -61,7 +87,9 @@ export default function DashboardPage() {
             Back to Home
           </Link>
 
-          <h1 className="text-3xl font-bold mt-4">Welcome to your Dashboard</h1>
+          <h1 className="text-3xl font-bold mt-4">
+            Welcome, <span className="text-green-400">{userData?.name}</span>
+          </h1>
           <p className="text-zinc-400 mt-2">Ready to play some chess?</p>
         </div>
 

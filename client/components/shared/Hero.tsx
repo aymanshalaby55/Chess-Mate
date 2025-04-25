@@ -1,15 +1,31 @@
-import Link from 'next/link';
+'use client';
 import { ChevronRight } from 'lucide-react';
-// import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import HeroChessboard from './HeroChessBoard';
+import { Button } from '../ui/button';
 
 const Hero = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    // Check if the user is logged in by verifying the presence of a token or user data
+    const token = document.cookie.includes('accesstoken');
+    setIsLoggedIn(token);
+  }, []);
+
+  const handlePlayNowClick = () => {
+    if (isLoggedIn) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen justify-center text-white bg-gradient-to-b from-black via-gray-900 to-black">
-      <section className="relative py-56 md:py-56 px-6 overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-20">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#4ade80_0,transparent_80%)]" />
-        </div>
+      <section className="">
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
@@ -21,19 +37,13 @@ const Hero = () => {
                 and compete with players from around the world.
               </p>
               <div className="flex flex-col sm:flex-row gap-6 pt-6">
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-lg py-3 px-8 cursor-pointer transition duration-300 ease-in-out transform hover:scale-105"
-                >
-                  Play Now <ChevronRight className="ml-3 h-5 w-5" />
-                </Link>
-                {/* <Button
+                <Button
                   size="lg"
-                  variant="outline"
-                  className="border-green-600 text-green-400 hover:bg-green-950"
+                  onClick={handlePlayNowClick}
+                  className="bg-green-600 hover:bg-green-700 text-white cursor-pointer text-lg"
                 >
-                  Learn More
-                </Button> */}
+                  Play Now <ChevronRight className="ml-3 h-5 w-5 font-bold" />
+                </Button>
               </div>
             </div>
             <div className="relative h-[350px] md:h-[450px] w-full">

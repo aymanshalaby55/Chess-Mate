@@ -1,61 +1,28 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
-import { UserService } from '../../user/user.service';
-import { Request } from 'express';
-
-// Define the payload type
-interface JwtPayload {
-  email: string;
-  sub: string;
-}
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly userService: UserService,
-  ) {
-    const secretKey = configService.get<string>('JWT_SECRET');
-    if (!secretKey) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
-    }
-
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => {
-          // First try to get the token from cookies
-          const cookieToken = request?.cookies?.accesstoken;
-          if (cookieToken) {
-            return cookieToken;
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req: { cookies: { [x: string]: any } }) => {
+          let token = null;
+          if (req && req.cookies) {
+            token = req.cookies['accesstoken'];
           }
-
-          // If no cookie token, try to get it from the Authorization header
-          const authHeader = request.headers.authorization;
-          if (authHeader && authHeader.startsWith('Bearer ')) {
-            return authHeader.substring(7);
-          }
-
-          return null;
+          return token;
         },
       ]),
-      ignoreExpiration: true,
-      secretOrKey: secretKey,
+      secretOrKey: configService.get('JWT_SECRET'),
+      ignoreExpiration: false,
     });
   }
 
-  async validate(payload: JwtPayload) {
-    const user = await this.userService.findByEmail(payload.email);
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-    };
+  validate(payload: any) {
+    return { email: payload.email };
   }
 }

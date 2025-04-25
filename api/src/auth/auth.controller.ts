@@ -33,6 +33,8 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   googleAuthCallback(@Req() req: Request, @Res() res: Response) {
     const user = req.user;
+
+    console.log(user)
     // After successful Google authentication, get login data
     const authResult = this.authService.googleLogin(user);
 
@@ -66,7 +68,7 @@ export class AuthController {
     return req.user;
   }
 
-  @Post('logout')
+  @Get('logout')
   logout(@Res() res: Response) {
     res.clearCookie('accesstoken');
     return res.send({ message: 'Logged out successfully' });

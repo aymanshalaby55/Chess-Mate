@@ -38,7 +38,7 @@ export default function SignInPage() {
             </div>
 
             <div className="space-y-2">
-              <Button variant="outline" className="w-full border-zinc-700 hover:bg-zinc-800 hover:text-white">
+              <Button variant="outline" className="w-full border-zinc-700 hover:bg-zinc-800 hover:text-white cursor-pointer">
                 Play as Guest
               </Button>
               <p className="text-xs text-center text-zinc-500">Limited features available in guest mode</p>
