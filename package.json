@@ -1,0 +1,16 @@
+{
+  "name": "chessmate",
+  "version": "1.0.0",
+  "description": "A chess application with user authentication",
+  "scripts": {
+    "dev:api": "cd api && pnpm run start:dev",
+    "dev:client": "cd client && pnpm run dev",
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:client\"",
+    "install:api": "cd api && pnpm install",
+    "install:client": "cd client && pnpm install",
+    "install:all": "pnpm install && npm run install:api && npm run install:client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 

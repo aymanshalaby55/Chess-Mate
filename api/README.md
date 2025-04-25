@@ -22,6 +22,112 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
+# ChessMate API
+
+Backend API for the ChessMate application, built with NestJS, Prisma, and PostgreSQL.
+
+## Features
+
+- User authentication with email/password
+- Google OAuth authentication
+- JWT-based authorization
+- PostgreSQL database with Prisma ORM
+
+## Setup
+
+### Prerequisites
+
+- Node.js (v16+)
+- PostgreSQL
+- Google OAuth credentials (for Google login)
+
+### Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```
+# Database configuration
+DATABASE_URL="postgresql://postgres:password@localhost:5432/chessmate?schema=public"
+
+# JWT Secret
+JWT_SECRET="your-secret-key-here"
+JWT_EXPIRES_IN="7d"
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID="your-google-client-id"
+GOOGLE_CLIENT_SECRET="your-google-client-secret"
+GOOGLE_CALLBACK_URL="http://localhost:3000/api/auth/google/callback"
+```
+
+### Installation
+
+```bash
+# Install dependencies
+pnpm install
+
+# Generate Prisma client
+pnpm exec prisma generate
+
+# Run database migrations
+pnpm exec prisma migrate dev
+
+# Start the development server
+pnpm run start:dev
+```
+
+## API Endpoints
+
+### Authentication
+
+- `POST /api/auth/signup` - Register a new user with email and password
+- `POST /api/auth/signin` - Login with email and password
+- `GET /api/auth/google` - Initiate Google OAuth login
+- `GET /api/auth/google/callback` - Google OAuth callback
+- `GET /api/auth/profile` - Get current user profile (requires authentication)
+
+### Request Examples
+
+#### Signup
+
+```bash
+curl -X POST http://localhost:3000/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123",
+    "name": "John Doe"
+  }'
+```
+
+#### Signin
+
+```bash
+curl -X POST http://localhost:3000/api/auth/signin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123"
+  }'
+```
+
+#### Get Profile
+
+```bash
+curl -X GET http://localhost:3000/api/auth/profile \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+## Google OAuth Setup
+
+1. Create a project in [Google Cloud Console](https://console.cloud.google.com/)
+2. Create OAuth credentials
+3. Set the authorized redirect URI to `http://localhost:3000/api/auth/google/callback`
+4. Copy the Client ID and Client Secret to your `.env` file
+
+## License
+
+[MIT](LICENSE)
+
 ## Description
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
