@@ -1,30 +1,30 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { useUserContext } from '@/app/context/UserContext';
+
+// import { useRouter } from "next/navigation"
+// import api from "@/lib/api"
 
 const SignInButton = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useUserContext();
+  // const router = useRouter()
 
   const handleSignIn = async () => {
-    setIsLoading(true)
-
-    // This is a placeholder for the actual Google authentication
-    // In a real implementation, you would use NextAuth.js to handle the authentication
+    setIsLoading(true);
     try {
-      // Simulate authentication delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      // Redirect to dashboard after successful authentication
-      router.push("/dashboard")
+      const data = await login();
+      console.log(data);
+      return data;
     } catch (error) {
-      console.error("Authentication error:", error)
+      console.error('Authentication error:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
   return (
     <Button
       variant="outline"
@@ -40,7 +40,14 @@ const SignInButton = () => {
             fill="none"
             viewBox="0 0 24 24"
           >
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
             <path
               className="opacity-75"
               fill="currentColor"
@@ -74,7 +81,7 @@ const SignInButton = () => {
         </div>
       )}
     </Button>
-  )
-}
+  );
+};
 
-export default SignInButton
+export default SignInButton;
