@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback } from 'passport-google-oauth20';
@@ -28,7 +29,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     const email = emails[0].value;
     const picture = photos[0].value;
-    
+
     const user = {
       id,
       email: emails[0].value,
@@ -38,7 +39,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       refreshToken,
     };
 
-    console.log(user);
+    console.log(user.name);
 
     done(null, user);
   }
