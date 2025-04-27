@@ -4,9 +4,9 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { Chess, Square, Color } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import Engine from '@/utils/Engine';
-import MoveHistory from '@/components/MoveHistory';
-import DetailedMoveHistory from '@/components/DetailedMoveHistory';
-import TimelineMoveHistory from '@/components/TimelineMoveHistory';
+import MoveHistory from '@/components/shared/MoveHistory';
+import DetailedMoveHistory from '@/components/shared/DetailedMoveHistory';
+import TimelineMoveHistory from '@/components/shared/TimelineMoveHistory';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 

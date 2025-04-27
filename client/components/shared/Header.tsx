@@ -12,7 +12,7 @@ const Header = () => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const router = useRouter();
   const { logout } = useUserContext();
-  
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -43,7 +43,7 @@ const Header = () => {
   }, [router]);
 
   return (
-    <header className="sticky top-0 border-b border-zinc-800 bg-zinc-950 text-white">
+    <header className="sticky z-50 top-0 border-b border-zinc-800 bg-zinc-950 text-white">
       <div className="container mx-auto max-w-7xl px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center">

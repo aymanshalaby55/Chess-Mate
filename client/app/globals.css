@@ -1,6 +1,5 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-/* body {
-  background-image: radial-gradient(circle at center, #4ade80 0%, transparent 80%);
-} */
-
+body {
+  @apply bg-gradient-to-b from-black via-gray-900 to-black;
+}
