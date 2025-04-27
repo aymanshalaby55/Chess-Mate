@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, useDeferredValue } from 'react';
 import { Chess, Square, Color } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
 import Engine from '@/utils/Engine';
@@ -19,6 +19,43 @@ interface ChessMove {
 
 type MoveViewType = 'table' | 'list' | 'timeline';
 
+// Wrap the ChessBoard component in React.memo to prevent unnecessary re-renders
+const MemoizedChessboard = React.memo(Chessboard);
+
+// Isolate the chessboard in its own component to minimize re-renders
+const ChessboardContainer = React.memo(({ 
+  position, 
+  orientation, 
+  onPieceDrop, 
+  isThinking 
+}: { 
+  position: string; 
+  orientation: 'white' | 'black'; 
+  onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+  isThinking: boolean;
+}) => {
+  const boardProps = useMemo(() => ({
+    position,
+    onPieceDrop,
+    customDarkSquareStyle: { backgroundColor: '#8aad6a' },
+    customLightSquareStyle: { backgroundColor: '#f0e9c5' },
+    boardOrientation: orientation,
+    animationDuration: 200, // Smooth animation for better UX
+  }), [position, orientation, onPieceDrop]);
+
+  return (
+    <div className="w-full aspect-square relative">
+      <MemoizedChessboard
+        {...boardProps}
+      />
+
+    </div>
+  );
+});
+
+// Optional: Add display name for debugging
+ChessboardContainer.displayName = 'ChessboardContainer';
+
 export default function PlayComputer() {
   const [game, setGame] = useState(() => new Chess());
   const gameRef = useRef<Chess>(new Chess());
@@ -27,6 +64,8 @@ export default function PlayComputer() {
   const [engineReady, setEngineReady] = useState(false);
   const [playerColor, setPlayerColor] = useState<Color>('w'); // Default to white
   const [boardPosition, setBoardPosition] = useState(new Chess().fen());
+  // Use deferred value to reduce rendering pressure
+  const deferredBoardPosition = useDeferredValue(boardPosition);
   const [viewingHistory, setViewingHistory] = useState(false);
   const [viewingMoveIndex, setViewingMoveIndex] = useState(-1);
   const [moveView, setMoveView] = useState<MoveViewType>('table');
@@ -49,6 +88,17 @@ export default function PlayComputer() {
     }
   }, [game, viewingHistory]);
 
+  // Handle game over conditions
+  const handleGameOver = useCallback((game: Chess) => {
+    if (game.isCheckmate()) {
+      alert(`Checkmate! ${game.turn() === 'w' ? 'Black' : 'White'} wins!`);
+    } else if (game.isDraw()) {
+      alert('Game ended in a draw');
+    } else if (game.isStalemate()) {
+      alert('Game ended in stalemate');
+    }
+  }, []);
+
   // Make engine move
   const makeEngineMove = useCallback((moveUci: string) => {
     console.log('Applying engine move:', moveUci);
@@ -59,41 +109,48 @@ export default function PlayComputer() {
       promotion: moveUci.length > 4 ? moveUci.substring(4, 5) as 'q' | 'r' | 'b' | 'n' : undefined,
     };
 
-    // Create a new game instance with the current position
-    const currentFen = gameRef.current.fen();
-    const newGame = new Chess(currentFen);
-    
-    try {
-      console.log('Current position:', currentFen);
-      console.log('Attempting move:', move);
-      
-      const moveResult = newGame.move(move);
-      
-      if (moveResult) {
-        console.log('Move successful:', moveResult);
-        gameRef.current = newGame;
+    // Add a small delay before applying the move to make it feel like a piece is being grabbed
+    setTimeout(() => {
+      // Use a functional update to avoid stale state
+      setGame(currentGame => {
+        // Create a new game instance with the current position
+        const newGame = new Chess(currentGame.fen());
         
-        // Update game state
-        setGame(newGame);
-        
-        // Check for game over after engine move
-        if (newGame.isGameOver()) {
-          handleGameOver(newGame);
+        try {
+          console.log('Current position:', newGame.fen());
+          console.log('Attempting move:', move);
+          
+          const moveResult = newGame.move(move);
+          
+          if (moveResult) {
+            console.log('Move successful:', moveResult);
+            gameRef.current = newGame;
+            
+            // Check for game over after engine move
+            if (newGame.isGameOver()) {
+              // Schedule gameOver check to happen after state update
+              setTimeout(() => handleGameOver(newGame), 0);
+            }
+            
+            return newGame;
+          } else {
+            console.error('Invalid engine move (rejected by chess.js):', move);
+            console.error('Current position FEN:', newGame.fen());
+            console.error('Current turn:', newGame.turn());
+            console.error('Valid moves:', newGame.moves({ verbose: true }));
+            return currentGame; // Return the current game state unchanged
+          }
+        } catch (error) {
+          console.error('Error making engine move:', error);
+          console.error('Move that caused error:', move);
+          console.error('Current FEN:', newGame.fen());
+          return currentGame; // Return the current game state unchanged
+        } finally {
+          setIsEngineThinking(false);
         }
-      } else {
-        console.error('Invalid engine move (rejected by chess.js):', move);
-        console.error('Current position FEN:', currentFen);
-        console.error('Current turn:', newGame.turn());
-        console.error('Valid moves:', newGame.moves({ verbose: true }));
-      }
-    } catch (error) {
-      console.error('Error making engine move:', error);
-      console.error('Move that caused error:', move);
-      console.error('Current FEN:', currentFen);
-    } finally {
-      setIsEngineThinking(false);
-    }
-  }, []);
+      });
+    }, 300); // 300ms delay simulates grabbing a piece
+  }, [handleGameOver]);
 
   // Ask engine to make a move
   const askEngineMove = useCallback((fen: string) => {
@@ -103,19 +160,37 @@ export default function PlayComputer() {
     }
 
     setIsEngineThinking(true);
-    console.log('Asking engine to move from position:', fen);
-    engineRef.current.evaluatePosition(fen, 10); // Depth 10 is good balance
-  }, []);
-
-  // Handle game over conditions
-  const handleGameOver = useCallback((game: Chess) => {
-    if (game.isCheckmate()) {
-      alert(`Checkmate! ${game.turn() === 'w' ? 'Black' : 'White'} wins!`);
-    } else if (game.isDraw()) {
-      alert('Game ended in a draw');
-    } else if (game.isStalemate()) {
-      alert('Game ended in stalemate');
+    
+    // Add a realistic delay before starting engine calculation
+    // This makes the computer appear more human-like
+    const moveCount = gameRef.current.history().length;
+    
+    // Calculate a varying delay based on game phase
+    // Opening: faster moves (1-2 seconds)
+    // Middle game: more thinking (2-4 seconds) 
+    // End game: careful calculation (1.5-3 seconds)
+    let minDelay = 1000; // minimum 1 second
+    let maxDelay = 2000; // default max 2 seconds
+    
+    if (moveCount > 10 && moveCount < 30) {
+      // Middle game - more complex positions need more "thinking time"
+      minDelay = 2000;
+      maxDelay = 4000;
+    } else if (moveCount >= 30) {
+      // End game - critical decisions
+      minDelay = 1500;
+      maxDelay = 3000;
     }
+    
+    // Generate a random delay within the range to seem more natural
+    const thinkingTime = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+    
+    console.log(`Computer thinking for ${thinkingTime}ms before calculating move...`);
+    
+    setTimeout(() => {
+      console.log('Asking engine to move from position:', fen);
+      engineRef.current?.evaluatePosition(fen, 10); // Depth 10 is good balance
+    }, thinkingTime);
   }, []);
 
   // Initialize the engine
@@ -147,9 +222,10 @@ export default function PlayComputer() {
           
           // If player is black, engine (white) makes first move
           if (playerColor === 'b' && gameRef.current.turn() === 'w') {
+            // Add initial delay before first move
             setTimeout(() => {
               askEngineMove(gameRef.current.fen());
-            }, 500);
+            }, 1000); // First move delay
           }
         });
 
@@ -173,7 +249,7 @@ export default function PlayComputer() {
         engineRef.current.terminate();
       }
     };
-  }, [playerColor, makeEngineMove, askEngineMove]);
+  }, [playerColor, askEngineMove, makeEngineMove]);
 
   // Handle player move
   const onDrop = useCallback((sourceSquare: Square, targetSquare: Square): boolean => {
@@ -188,69 +264,61 @@ export default function PlayComputer() {
       return false;
     }
 
-    try {
-      let promotion: 'q' | 'r' | 'b' | 'n' | undefined = undefined;
-      const newGame = new Chess(gameRef.current.fen());
-      const piece = newGame.get(sourceSquare);
-
-      if (piece && piece.type === 'p') {
-        const isPromotion =
-          (piece.color === 'w' && targetSquare.charAt(1) === '8') ||
-          (piece.color === 'b' && targetSquare.charAt(1) === '1');
-
-        if (isPromotion) {
-          promotion = 'q'; // Default to queen
+    let promotion: 'q' | 'r' | 'b' | 'n' | undefined = undefined;
+    
+    // Use functional update to avoid stale state
+    setGame(currentGame => {
+      try {
+        const newGame = new Chess(currentGame.fen());
+        const piece = newGame.get(sourceSquare);
+  
+        if (piece && piece.type === 'p') {
+          const isPromotion =
+            (piece.color === 'w' && targetSquare.charAt(1) === '8') ||
+            (piece.color === 'b' && targetSquare.charAt(1) === '1');
+  
+          if (isPromotion) {
+            promotion = 'q'; // Default to queen
+          }
         }
+  
+        const move: ChessMove = {
+          from: sourceSquare,
+          to: targetSquare,
+          promotion: promotion,
+        };
+  
+        console.log('Player attempting move:', move);
+        const result = newGame.move(move);
+  
+        if (result === null) {
+          console.log('Invalid player move');
+          return currentGame; // Return unchanged
+        }
+  
+        console.log('Player move successful:', result);
+        gameRef.current = newGame;
+        
+        // Schedule game over check
+        if (newGame.isGameOver()) {
+          setTimeout(() => handleGameOver(newGame), 0);
+        } else if (engineReady && engineRef.current) {
+          // Add a natural pause before the computer starts thinking
+          // This simulates a real opponent observing your move before thinking
+          setTimeout(() => {
+            askEngineMove(newGame.fen());
+          }, 100);
+        }
+  
+        return newGame;
+      } catch (error) {
+        console.error('Error making player move:', error);
+        return currentGame; // Return unchanged on error
       }
-
-      const move: ChessMove = {
-        from: sourceSquare,
-        to: targetSquare,
-        promotion: promotion,
-      };
-
-      console.log('Player attempting move:', move);
-      const result = newGame.move(move);
-
-      if (result === null) {
-        console.log('Invalid player move');
-        return false;
-      }
-
-      console.log('Player move successful:', result);
-      gameRef.current = newGame;
-      
-      // Update game state
-      setGame(newGame);
-      
-      // Check for game over after player move
-      if (newGame.isGameOver()) {
-        handleGameOver(newGame);
-        return true;
-      }
-
-      if (engineReady && engineRef.current) {
-        setTimeout(() => {
-          askEngineMove(newGame.fen());
-        }, 300);
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error making player move:', error);
-      return false;
-    }
+    });
+    
+    return true;
   }, [isEngineThinking, playerColor, engineReady, askEngineMove, handleGameOver, viewingHistory]);
-
-  // Memoize board props to prevent unnecessary re-renders
-  const boardProps = useMemo(() => ({
-    position: boardPosition,
-    onPieceDrop: onDrop,
-    customDarkSquareStyle: { backgroundColor: '#8aad6a' },
-    customLightSquareStyle: { backgroundColor: '#f0e9c5' },
-    boardOrientation: playerColor === 'w' ? 'white' : 'black' as 'white' | 'black',
-    animationDuration: 200, // Smooth animation for better UX
-  }), [boardPosition, playerColor, onDrop]);
 
   // Reset the game
   const resetGame = useCallback(() => {
@@ -360,20 +428,13 @@ export default function PlayComputer() {
                 </div>
               </div>
               
-              {/* Chessboard with props */}
-              <div className="w-full aspect-square relative">
-                <Chessboard
-                  {...boardProps}
-                />
-                {isEngineThinking && (
-                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-md">
-                    <div className="bg-zinc-900 p-4 rounded-md shadow-lg flex items-center border border-zinc-700">
-                      <Loader2 className="w-5 h-5 text-green-400 animate-spin mr-2" />
-                      <span className="text-white">Computer is thinking...</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Replace the direct Chessboard with the container component */}
+              <ChessboardContainer
+                position={deferredBoardPosition}
+                orientation={playerColor === 'w' ? 'white' : 'black'}
+                onPieceDrop={onDrop}
+                isThinking={isEngineThinking}
+              />
             </div>
             
             {/* Game status */}
