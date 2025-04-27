@@ -1,14 +1,20 @@
-'use client';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Trophy, Users } from 'lucide-react';
-import HeroChessboard from '@/components/shared/HeroChessBoard';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/api';
-import { toast } from 'sonner';
-import { UserData } from '@/lib/types';
-
+"use client";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Trophy, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import { UserData } from "@/lib/types";
+import { Chessboard } from "react-chessboard";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -19,17 +25,17 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await api.get('/user/info');
+        const { data } = await api.get("/user/info");
         if (!data) {
-          router.push('/login');
-          toast.error('You need to login first', {
-            style: { color: 'black', backgroundColor: 'white' },
+          router.push("/login");
+          toast.error("You need to login first", {
+            style: { color: "black", backgroundColor: "white" },
           });
           return;
         }
         setUserData(data);
       } catch {
-        router.push('/login');
+        router.push("/login");
       }
     };
     fetchData();
@@ -57,7 +63,12 @@ export default function DashboardPage() {
           <div className="lg:col-span-2">
             <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
               <h2 className="text-xl font-bold mb-4">Current Game</h2>
-              <HeroChessboard />
+              <Chessboard
+                customDarkSquareStyle={{ backgroundColor: "#8aad6a" }}
+                customLightSquareStyle={{ backgroundColor: "#f0e9c5" }}
+                arePiecesDraggable={false}
+                position="start"
+              />
             </div>
 
             <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800">
@@ -158,9 +169,30 @@ export default function DashboardPage() {
                 <p className="text-zinc-400 text-sm mb-4">
                   Find an opponent and start a new game
                 </p>
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  Find Match
-                </Button>
+                <Dialog>
+                  <DialogTrigger className="w-full">
+                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                      Start Match
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="bg-white text-black ">
+                    <DialogHeader className="flex flex-col gap-4">
+                      <DialogTitle className="flex items-center justify-center">
+                        Play Chess
+                      </DialogTitle>
+                      <Link href={"/play-computer"}>
+                        <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                          Play Vs Computer
+                        </Button>
+                      </Link>
+                      <Link href={"/"}>
+                        <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                          Play Online
+                        </Button>
+                      </Link>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800 hover:border-green-800 transition-colors">

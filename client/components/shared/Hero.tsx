@@ -2,8 +2,8 @@
 import { ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import HeroChessboard from './HeroChessBoard';
 import { Button } from '../ui/button';
+import { Chessboard } from 'react-chessboard';
 
 const Hero = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -47,7 +47,19 @@ const Hero = () => {
               </div>
             </div>
             <div className="relative h-[350px] md:h-[450px] w-full">
-              <HeroChessboard />
+              <Chessboard 
+                customDarkSquareStyle={{ backgroundColor: '#8aad6a' }} 
+                customLightSquareStyle={{ backgroundColor: '#f0e9c5' }}
+                arePiecesDraggable={false}
+                position="start"
+                customBoardStyle={{
+                  width: '100%',
+                  height: '100%',
+                  maxWidth: '450px',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                }}
+              />
             </div>
           </div>
         </section>

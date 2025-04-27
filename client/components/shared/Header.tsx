@@ -48,7 +48,7 @@ const Header = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <Link href={'/'} className="text-xl font-bold text-white">
-              Chess<span className="text-green-400">Masters</span>
+              Chess<span className="text-green-400">Mate</span>
             </Link>
           </div>
 
