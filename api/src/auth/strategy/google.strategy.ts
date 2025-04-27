@@ -32,7 +32,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     const user = {
       id,
-      email,
+      email: emails[0].value,
       name: `${name.givenName} ${name.familyName}`.trim(),
       picture: picture,
       accessToken,
