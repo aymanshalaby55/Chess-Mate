@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -13,6 +13,7 @@
     "@radix-ui/react-slot": "^1.2.0",
     "@tanstack/react-query": "^5.74.4",
     "axios": "^1.9.0",
+    "chess.js": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.503.0",
@@ -22,6 +23,7 @@
     "react-chessboard": "^4.7.3",
     "react-dom": "^19.0.0",
     "sonner": "^2.0.3",
+    "stockfish": "^16.0.0",
     "tailwind-merge": "^3.2.0"
   },
   "devDependencies": {

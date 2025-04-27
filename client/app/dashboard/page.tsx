@@ -171,7 +171,7 @@ export default function DashboardPage() {
                 </p>
                 <Dialog>
                   <DialogTrigger className="w-full">
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                    <Button className="w-full bg-green-600 hover:bg-green-700 cursor-pointer">
                       Start Match
                     </Button>
                   </DialogTrigger>
@@ -180,12 +180,12 @@ export default function DashboardPage() {
                       <DialogTitle className="flex items-center justify-center">
                         Play Chess
                       </DialogTitle>
-                      <Link href={"/play-computer"}>
+                      <Link href={"/play-computer"} className="cursor-pointer">
                         <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
                           Play Vs Computer
                         </Button>
                       </Link>
-                      <Link href={"/"}>
+                      <Link href={"/"} className="cursor-pointer">
                         <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
                           Play Online
                         </Button>
