@@ -25,8 +25,7 @@ const Hero = () => {
 
   return (
     <div className="flex flex-col min-h-screen justify-center text-white bg-gradient-to-b from-black via-gray-900 to-black">
-      <section className="">
-        <div className="container mx-auto max-w-7xl relative z-10">
+        <section className="container mx-auto max-w-7xl px-4 relative z-10">
           <div className="grid md:grid-cols-2 gap-16 items-center">
             <div className="space-y-8">
               <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
@@ -40,6 +39,7 @@ const Hero = () => {
                 <Button
                   size="lg"
                   onClick={handlePlayNowClick}
+                  // disabled={isLoading}
                   className="bg-green-600 hover:bg-green-700 text-white cursor-pointer text-lg"
                 >
                   Play Now <ChevronRight className="ml-3 h-5 w-5 font-bold" />
@@ -50,8 +50,7 @@ const Hero = () => {
               <HeroChessboard />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
     </div>
   );
 };

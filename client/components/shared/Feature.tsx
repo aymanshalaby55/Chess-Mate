@@ -1,11 +1,5 @@
-import type { ReactNode } from "react"
+import { FeatureCardProps } from '@/lib/types';
 import { Crown, Shield, Zap } from 'lucide-react';
-
-interface FeatureCardProps {
-  icon: ReactNode
-  title: string
-  description: string
-}
 
 const FeatureCard = function({ icon, title, description }: FeatureCardProps) {
   return (

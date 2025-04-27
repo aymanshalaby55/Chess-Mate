@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useState, useEffect } from "react";
-import api from "@/lib/api";
-import { toast } from "sonner";
-import { AxiosError } from "axios";
+import { createContext, useContext, useState, useEffect } from 'react';
+// import { usePathname } from 'next/navigation';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import { AxiosError } from 'axios';
 
 interface User {
   id: string;
@@ -22,110 +23,105 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-const useUserContext = () => {
+export const useUserContext = () => {
   const context = useContext(UserContext);
   if (!context) {
-    throw new Error("useUser must be used within a UserProvider");
+    throw new Error('useUserContext must be used within a UserProvider');
   }
   return context;
 };
 
-const UserProvider = ({ children }: { children: React.ReactNode }) => {
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  const login = async () => {
-    try {
-      setLoading(true);
-      // Instead of making an AJAX request, redirect the browser to the Google OAuth endpoint
-      window.location.href = "http://localhost:4040/api/auth/google";
-      // Note: The function will not continue past this point as the page is redirected
-    } catch (error) {
-      console.error("Login Error:", error);
-      toast("Failed to redirect to authentication page");
-      setLoading(false);
-    }
-  };
+  // const pathname = usePathname();
 
-  const logout = async () => {
+  const login = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      // Call the logout endpoint which will clear the cookie
-      await api.post("/auth/logout");
-      // Clear local user data
-      setUser(null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("user");
-      }
-      // Redirect to home or login page
-      window.location.href = "/";
+      window.location.href = 'http://localhost:4040/api/auth/google';
     } catch (error) {
-      console.error("Logout Error:", error);
+      console.error('Login Error:', error);
+      toast.error('Failed to start login process.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Effect to load user from localStorage on startup
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          console.error("Failed to parse stored user", e);
-          localStorage.removeItem("user");
-        }
-      }
+  const logout = async () => {
+    setLoading(true);
+    try {
+      await api.get('/auth/logout');
+    } catch (error) {
+      console.error('Logout Error:', error);
+      toast.error('There was a problem logging out.');
+    } finally {
+      clearUser();
+      window.location.href = '/';
+      setLoading(false);
     }
-  }, []);
+  };
 
-  // Effect to handle URL parameters from OAuth callback
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const userData = urlParams.get("user");
-      
-      if (userData) {
-        try {
-          const parsedUser = JSON.parse(decodeURIComponent(userData));
-          setUser(parsedUser);
-          localStorage.setItem("user", JSON.stringify(parsedUser));
-          // Clear the URL parameters
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (error) {
-          console.error("Failed to parse user data from callback", error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    }
-  }, []);
+  const clearUser = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    document.cookie = 'user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  };
 
-  // Effect to check auth status periodically
-  useEffect(() => {
-    // Function to check if user is still authenticated
-    const checkAuthStatus = async () => {
-      if (!user) return;
-      
+  const loadUserFromCookies = () => {
+    const cookies = document.cookie.split('; ');
+    const userCookie = cookies.find(cookie => cookie.startsWith('user='));
+    if (userCookie) {
       try {
-        // Make a request to a protected endpoint
-        await api.get("/auth/profile");
+        const storedUser = decodeURIComponent(userCookie.split('=')[1]);
+        setUser(JSON.parse(storedUser));
       } catch (error) {
-        // If 401 Unauthorized, clear user data
-        if ((error as AxiosError)?.response?.status === 401) {
-          setUser(null);
-          localStorage.removeItem("user");
-          toast("Your session has expired. Please log in again.");
-        }
+        console.error('Error parsing user from cookie:', error);
+        clearUser();
       }
-    };
-    
-    // Check auth status every 5 minutes
+    }
+  };
+
+  const handleOAuthCallback = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userData = urlParams.get('user');
+
+    if (userData) {
+      try {
+        const parsedUser = JSON.parse(decodeURIComponent(userData));
+        setUser(parsedUser);
+        localStorage.setItem('user', JSON.stringify(parsedUser));
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (error) {
+        console.error('Error parsing OAuth user data:', error);
+        toast.error('Failed to process login response.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const checkAuthStatus = async () => {
+    if (!user) return;
+    try {
+      await api.get('/auth/profile');
+    } catch (error) {
+      if ((error as AxiosError)?.response?.status === 401) {
+        toast('Session expired. Please log in again.');
+        clearUser();
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      loadUserFromCookies();
+      handleOAuthCallback();
+    }
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(checkAuthStatus, 5 * 60 * 1000);
-    
-    // Clear interval on unmount
     return () => clearInterval(interval);
   }, [user]);
 
@@ -135,5 +131,3 @@ const UserProvider = ({ children }: { children: React.ReactNode }) => {
     </UserContext.Provider>
   );
 };
-
-export { UserProvider, useUserContext };

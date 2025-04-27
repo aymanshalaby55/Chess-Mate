@@ -1,93 +1,43 @@
-"use client";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trophy, Users } from "lucide-react";
-import HeroChessboard from "@/components/shared/HeroChessBoard";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useUserContext } from "@/app/context/UserContext";
-import api from "@/lib/api";
-import { toast } from "sonner";
+'use client';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Trophy, Users } from 'lucide-react';
+import HeroChessboard from '@/components/shared/HeroChessBoard';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import { UserData } from '@/lib/types';
 
-interface UserData {
-  name: string;
-  email: string;
-  picture?: string;
-}
 
 export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const router = useRouter();
-  const { logout } = useUserContext();
 
   console.log(userData);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data } = await api.get("/user/info");
+        const { data } = await api.get('/user/info');
+        if (!data) {
+          router.push('/login');
+          toast.error('You need to login first', {
+            style: { color: 'black', backgroundColor: 'white' },
+          });
+          return;
+        }
         setUserData(data);
       } catch {
-        router.push("/login");
-        toast.error("Can't login. Please try again.", {
-          style: { color: "black", backgroundColor: "white" },
-        });
+        router.push('/login');
       }
     };
     fetchData();
   }, [router]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/login");
-    } catch (error) {
-      console.error("Failed to logout", error);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-black text-white">
-      <header className="border-b border-zinc-800 bg-zinc-950">
-        <div className="container mx-auto max-w-6xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-xl font-bold text-white">
-                Chess<span className="text-green-400">Masters</span>
-              </span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2">
-                <div className="relative h-8 w-8">
-                  {userData?.picture ? (
-                    <img
-                      src={userData.picture}
-                      alt="Profile"
-                      className="h-full w-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 rounded-full bg-green-500 flex items-center justify-center text-white font-bold">
-                      {userData?.name?.charAt(0)}
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm">{userData?.name}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-zinc-700 hover:bg-zinc-800"
-                onClick={handleLogout}
-              >
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto max-w-6xl px-4 py-8">
+      <main className="container mx-auto max-w-7xl px-4 py-8">
         <div className="mb-8">
           <Link
             href="/"

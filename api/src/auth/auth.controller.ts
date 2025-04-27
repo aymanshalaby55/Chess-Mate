@@ -57,7 +57,7 @@ export class AuthController {
       const userData = encodeURIComponent(JSON.stringify(authData.user));
 
       // Redirect to frontend with only user data in URL
-      return res.redirect(`http://localhost:3000/dashboard`);
+      return res.redirect(`http://localhost:3000/`);
     });
   }
 
