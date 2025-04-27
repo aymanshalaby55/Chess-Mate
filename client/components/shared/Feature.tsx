@@ -16,7 +16,7 @@ const Feature = () => {
     <section className="py-16 bg-zinc-900">
     <div className="container mx-auto max-w-6xl px-4">
       <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-        Why Choose <span className="text-green-400">Chess Masters</span>
+        Why Choose <span className="text-green-400">ChessMate</span>
       </h2>
 
       <div className="grid md:grid-cols-3 gap-8">
