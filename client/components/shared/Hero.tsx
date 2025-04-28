@@ -4,10 +4,17 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
 import { Chessboard } from 'react-chessboard';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { slideInFromLeft, slideInFromRight } from '@/utils/motion';
 
 const Hero = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
+
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+  });
 
   useEffect(() => {
     // Check if the user is logged in by verifying the presence of a token or user data
@@ -24,28 +31,41 @@ const Hero = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen justify-start text-white">
+    <div className="flex flex-col justify-center text-white">
       <section className="container mx-auto max-w-7xl px-4 py-16">
-        <div className="grid md:grid-cols-2 gap-16 items-center">
+        <motion.div
+          ref={ref}
+          initial="hidden"
+          animate={inView ? 'visible' : 'hidden'}
+          className="grid md:grid-cols-2 gap-16 items-center"
+        >
           <div className="space-y-8">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
+            <motion.h1
+              variants={slideInFromLeft(0.2)}
+              className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight"
+            >
               Master the Game of <span className="text-green-400">Kings</span>
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-300 leading-relaxed">
+            </motion.h1>
+            <motion.p
+              variants={slideInFromLeft(0.5)}
+              className="text-xl md:text-2xl text-gray-300 leading-relaxed"
+            >
               Elevate your chess skills with our modern platform. Play, learn,
               and compete with players from around the world.
-            </p>
-            <Button
-              size="lg"
-              onClick={handlePlayNowClick}
-              // disabled={isLoading}
-              className="bg-green-600 hover:bg-green-700 text-white cursor-pointer text-lg flex gap-1 items-center"
-            >
-              <span>Play Now </span>
-              <ChevronRight size={18} />
-            </Button>
+            </motion.p>
+            <motion.div variants={slideInFromLeft(0.8)}>
+              <Button
+                size="lg"
+                onClick={handlePlayNowClick}
+                // disabled={isLoading}
+                className="bg-green-600 hover:bg-green-700 text-white cursor-pointer text-lg flex gap-1 items-center"
+              >
+                <span>Play Now </span>
+                <ChevronRight size={18} />
+              </Button>
+            </motion.div>
           </div>
-          <div className="relative h-[350px] md:h-[450px] w-full">
+          <motion.div variants={slideInFromRight(0.8)} className="relative h-[350px] md:h-[450px] w-full">
             <Chessboard
               customDarkSquareStyle={{ backgroundColor: '#8aad6a' }}
               customLightSquareStyle={{ backgroundColor: '#f0e9c5' }}
@@ -59,8 +79,8 @@ const Hero = () => {
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
               }}
             />
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
     </div>
   );
