@@ -15,16 +15,75 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
   name          String?
-  password      String?   // Will be null if user logs in via Google
-  googleId      String?   @unique // Google OAuth ID
-  googleProfile Json?     // Store additional Google profile data
-  picture       String?   // Profile picture URL
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  password      String? // Will be null if user logs in via Google
+  googleId      String?  @unique // Google OAuth ID
+  googleProfile Json? // Store additional Google profile data
+  picture       String? // Profile picture URL
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   // You can add more relations here as needed
   // For example: games      Game[]
+  player1 Game[] @relation("player1")
+  player2 Game[] @relation("player2")
+}
+
+model Game {
+  id           Int        @id @default(autoincrement())
+
+  player1_id   Int
+  player1      User?      @relation("player1", fields: [player1_id], references: [id])
+  player2_id   Int
+  player2      User?      @relation("player2", fields: [player2_id], references: [id])
+
+  computerSide Side?
+  isComputer   Boolean    @default(false)
+  winnerId     Int?
+ 
+  status       GameStatus @default(ongoing)
+  boardStatus  String
+
+  createdAt    DateTime   @default(now())
+  lastMoveAt   DateTime   @updatedAt
+  moves        Move[]
+
+  @@index([player1_id])
+  @@index([player2_id])
+}
+
+model Move {
+  id         Int      @id @default(autoincrement())
+  gameId     Int
+  game       Game     @relation(fields: [gameId], references: [id])
+  moveNumber Int
+  from       String
+  to         String
+  piece      String
+  promotion  String?
+  capture    Boolean  @default(false)
+  check      Boolean  @default(false)
+  checkmate  Boolean  @default(false)
+  fen        String
+  pgn        String?
+  createdAt  DateTime @default(now())
+
+  @@index([gameId])
+  @@index([gameId, moveNumber])
+}
+
+// which side player playing.
+enum Side {
+  white
+  black
+}
+
+enum GameStatus {
+  ongoing
+  white_won
+  black_won
+  draw
+  resigned
 }
