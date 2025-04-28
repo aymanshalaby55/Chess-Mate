@@ -1,6 +1,6 @@
 import React from 'react';
 import { Chess } from 'chess.js';
-import MoveDisplay from './MoveDisplay';
+import MoveDisplay from '../shared/MoveDisplay';
 
 interface DetailedMoveHistoryProps {
   game: Chess;
