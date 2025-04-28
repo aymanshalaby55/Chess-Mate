@@ -67,7 +67,7 @@ model Move {
   check      Boolean  @default(false)
   checkmate  Boolean  @default(false)
   fen        String
-  pgn        String?
+  
   createdAt  DateTime @default(now())
 
   @@index([gameId])
