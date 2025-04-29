@@ -88,7 +88,7 @@ export class MovesService {
     // }
 
     // Use a transaction to ensure atomicity
-    return this.prisma.$transaction(async (prisma) => {
+    const data = await this.prisma.$transaction(async (prisma) => {
       // Create the move in the database
       await prisma.move.create({
         data: {
@@ -118,5 +118,6 @@ export class MovesService {
 
       return updatedGame;
     });
+    return data;
   }
 }

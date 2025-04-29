@@ -11,14 +11,16 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async googleLogin(user: any): Promise<{ access_token: string; user: any } | { message: string }> {
+  async googleLogin(
+    user: any,
+  ): Promise<{ access_token: string; user: any } | { message: string }> {
     if (!user) {
       return { message: 'No user from Google' };
     }
 
     // Check if user exists
     let dbUser = await this.prisma.user.findUnique({
-      where: { email: user.email },
+      where: { email: user.email as string },
     });
 
     // Create new user if not exists

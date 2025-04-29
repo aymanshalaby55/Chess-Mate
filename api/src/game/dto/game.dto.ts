@@ -17,9 +17,9 @@ export class GameDto {
   id: number;
   player1_id: number;
   player2_id: number;
-  computerSide?: Side;
+  computerSide: Side;
   isComputer: boolean;
-  winnerId?: number;
+  winnerId: number | null;
   status: GameStatus;
   boardStatus: string;
   createdAt: Date;

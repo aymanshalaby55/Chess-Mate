@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GameStatus, Side } from '@prisma/client';
 import { Chess } from 'chess.js';
+import { GameDto } from './dto/game.dto';
 
 @Injectable()
 export class GameService {
@@ -9,7 +10,7 @@ export class GameService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async createGamePvc(userId: number, playerSide: Side) {
+  async createGamePvc(userId: number, playerSide: Side): Promise<GameDto> {
     // Validate playerSide
     if (!Object.values(Side).includes(playerSide)) {
       throw new BadRequestException(`Invalid side: ${playerSide}`);
@@ -39,7 +40,7 @@ export class GameService {
     this.logger.log(`Created PvC game ${game.id} for user ${userId}`);
     return game;
   }
-  async getGame(gameId: number, userId: number) {
+  getGame(gameId: number, userId: number) {
     return userId;
   }
 

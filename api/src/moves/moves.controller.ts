@@ -1,4 +1,4 @@
-import { Body, Controller, Injectable, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Post } from '@nestjs/common';
 import { makeMove } from './dto/makMove.dto';
 import { MovesService } from './moves.service';
 import { GetUser } from 'src/auth/decorator';
@@ -12,6 +12,7 @@ export class MovesController {
     @Body() move: makeMove,
     @GetUser() user,
   ) {
-    return this.movesService.makeMove(move, gameId, user.id);
+    const id: number = user.id;
+    return this.movesService.makeMove(move, gameId, id);
   }
 }
