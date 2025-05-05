@@ -1,5 +1,5 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
-import { makeMove } from './dto/makMove.dto';
+import { makeMove } from './dto/makeMove.dto';
 import { MovesService } from './moves.service';
 import { GetUser } from 'src/auth/decorator';
 

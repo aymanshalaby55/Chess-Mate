@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { makeMove } from './dto/makMove.dto';
+import { makeMove } from './dto/makeMove.dto';
 import { Chess } from 'chess.js';
 import { GameStatus, Side } from '@prisma/client';
 
