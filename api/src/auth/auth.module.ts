@@ -16,7 +16,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
     UserModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: configService.get<string>('JWT_EXPIRATION'),
@@ -29,5 +29,4 @@ import { PrismaService } from 'src/prisma/prisma.service';
   providers: [AuthService, GoogleStrategy, JwtStrategy, PrismaService],
   exports: [AuthService],
 })
-export class AuthModule {
-} 
+export class AuthModule {}

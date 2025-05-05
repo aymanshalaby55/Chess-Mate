@@ -10,9 +10,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       jwtFromRequest: ExtractJwt.fromExtractors([
         ExtractJwt.fromAuthHeaderAsBearerToken(),
         (req: { cookies: { [x: string]: any } }) => {
-          let token = null;
+          let token: string = null;
           if (req && req.cookies) {
-            token = req.cookies['accesstoken'];
+            token = req.cookies['accesstoken'] as string;
           }
           return token;
         },
@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  validate(payload: any) {
-    return { email: payload.email };
+  validate(payload: { email: string; sub: number }) {
+    return { email: payload.email, id: payload.sub };
   }
 }

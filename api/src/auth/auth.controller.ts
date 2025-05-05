@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Req, Res, Post } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
@@ -24,8 +24,6 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   googleAuth() {
-    // This route initiates the Google OAuth flow
-    // The guard handles the redirect
     return 'Redirecting to Google...';
   }
 
@@ -34,7 +32,7 @@ export class AuthController {
   googleAuthCallback(@Req() req: Request, @Res() res: Response) {
     const user = req.user;
 
-    console.log(user)
+    console.log(user);
     // After successful Google authentication, get login data
     const authResult = this.authService.googleLogin(user);
 
@@ -53,19 +51,9 @@ export class AuthController {
       // Set JWT token in HTTP-only cookie
       res.cookie('accesstoken', token);
 
-      // Encode only the user data for URL (not the token)
-      const userData = encodeURIComponent(JSON.stringify(authData.user));
-
       // Redirect to frontend with only user data in URL
       return res.redirect(`http://localhost:3000/`);
     });
-  }
-
-  @Get('user-data')
-  @UseGuards(AuthGuard('jwt'))
-  getProfile(@Req() req: Request) {
-    
-    return req.user;
   }
 
   @Get('logout')
