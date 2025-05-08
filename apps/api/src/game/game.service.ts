@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { GameStatus, Side } from '@prisma/client';
 import { Chess } from 'chess.js';
@@ -40,8 +45,19 @@ export class GameService {
     this.logger.log(`Created PvC game ${game.id} for user ${userId}`);
     return game;
   }
-  getGame(gameId: number, userId: number) {
-    return userId;
+
+  async getGames(userId: number, limit: number = 1, offset: number = 0) {
+    const games = await this.prisma.game.findMany({
+      where: { OR: [{ player1_id: userId }, { player2_id: userId }] },
+      take: limit,
+      skip: offset,
+    });
+
+    if (!games) {
+      throw new NotFoundException('no game found for this user');
+    }
+
+    return games;
   }
 
   // async resignGame(gameId: number, userId: number) {

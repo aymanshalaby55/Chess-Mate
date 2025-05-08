@@ -29,7 +29,7 @@ const FullMoveHistory: React.FC<FullMoveHistoryProps> = ({
             return (
               <div 
                 key={index}
-                onClick={() => onMoveClick?.(index)}
+                // onClick={() => onMoveClick?.(index)}
                 className={`py-1 px-2 border-b border-gray-100 cursor-pointer text-black ${
                   isSelected ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'
                 }`}
