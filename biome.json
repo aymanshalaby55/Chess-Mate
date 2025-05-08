@@ -15,7 +15,8 @@
             "schema.graphql",
             "graphql-env.d.ts",
             "./apps/api/coverage",
-            "routeTree.gen.ts"
+            "routeTree.gen.ts",
+            ".next"
         ]
     },
     "formatter": {
@@ -83,7 +84,7 @@
             }
         },
         {
-            "include": ["apps/web/**/*"],
+            "include": ["apps/client/**/*"],
             "linter": {
                 "rules": {
                     "complexity": {
