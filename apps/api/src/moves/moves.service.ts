@@ -1,4 +1,13 @@
 import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { makeMove } from './dto/makMove.dto';
+import { Chess } from 'chess.js';
+import { GameStatus, Side } from '@prisma/client';
     BadRequestException,
     Injectable,
     NotFoundException,
@@ -31,6 +40,12 @@ export class MovesService {
             throw new BadRequestException("Game is not ongoing");
         }
 
+    // Validate player authorization, :to be done later
+    const isPlayer1 = game.player1_id === userId;
+    const isPlayer2 = game.player2_id === userId;
+    if (!game.isComputer && !isPlayer1 && !isPlayer2) {
+      throw new BadRequestException('User is not a player in this game');
+    }
         // Validate player authorization
         const isPlayer1 = game.player1_id === userId;
         const isPlayer2 = game.player2_id === userId;
@@ -79,14 +94,30 @@ export class MovesService {
             }
         }
 
-        // // Validate move number
-        // const expectedMoveNumber = game.moves.length + 1;
-        // if (move.moveNumber !== expectedMoveNumber) {
-        //   throw new BadRequestException(
-        //     `Invalid move number. Expected ${expectedMoveNumber}, got ${move.moveNumber}`,
-        //   );
-        // }
+    // transaction to ensure atomicity   // // Validate move number
+    const expectedMoveNumber = game.moves.length + 1;
+    if (move.moveNumber !== expectedMoveNumber) {
+      throw new BadRequestException(
+        `Invalid move number. Expected ${expectedMoveNumber}, got ${move.moveNumber}`,
+      );
+    }
 
+    const data = await this.prisma.$transaction(async (prisma) => {
+      // Create the move in the database
+      await prisma.move.create({
+        data: {
+          gameId: move.gameId,
+          moveNumber: move.moveNumber,
+          from: move.from,
+          to: move.to,
+          piece: move.piece,
+          promotion: move.promotion,
+          capture: !!moveResult.captured,
+          check: chess.inCheck(),
+          checkmate: isCheckmate,
+          fen: chess.fen(),
+        },
+      });
         // Use a transaction to ensure atomicity
         const data = await this.prisma.$transaction(async (prisma) => {
             // Create the move in the database
@@ -116,6 +147,43 @@ export class MovesService {
                 },
             });
 
+      return updatedGame;
+    });
+    return data;
+  }
+
+  async getMove(moveId: number) {
+    // search for move.
+    const move = await this.prisma.move.findUnique({ where: { id: moveId } });
+
+    if (!move) {
+      throw new ForbiddenException('move not found');
+    }
+
+    return move;
+  }
+
+  async getGameMoves(gameId: number) {
+    if (!gameId) {
+      throw new Error('game id is not valid');
+    }
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        moves: {
+          orderBy: {
+            moveNumber: 'asc', // Assuming moves have a moveNumber field
+          },
+        },
+      },
+    });
+
+    if (!game) {
+      throw new ForbiddenException('game not found');
+    }
+    const moves = game.moves;
+    return moves;
+  }
             return updatedGame;
         });
         return data;

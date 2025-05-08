@@ -1,3 +1,13 @@
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { GameStatus, Side } from '@prisma/client';
+import { Chess } from 'chess.js';
+import { GameDto } from './dto/game.dto';
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { GameStatus, Side } from "@prisma/client";
 import { Chess } from "chess.js";
@@ -37,6 +47,23 @@ export class GameService {
             },
         });
 
+    this.logger.log(`Created PvC game ${game.id} for user ${userId}`);
+    return game;
+  }
+
+  async getGames(userId: number, limit: number = 1, offset: number = 0) {
+    const games = await this.prisma.game.findMany({
+      where: { OR: [{ player1_id: userId }, { player2_id: userId }] },
+      take: limit,
+      skip: offset,
+    });
+
+    if (!games) {
+      throw new NotFoundException('no game found for this user');
+    }
+
+    return games;
+  }
         this.logger.log(`Created PvC game ${game.id} for user ${userId}`);
         return game;
     }
