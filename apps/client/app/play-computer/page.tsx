@@ -5,8 +5,8 @@ import { Chessboard } from 'react-chessboard';
 import { Square } from 'chess.js';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import TimelineMoveHistory from '@/components/shared/TimelineMoveHistory';
 import useComputerGame from '@/hooks/useComputerGame';
+import FullMoveHistory from '@/components/shared/TimelineMoveHistory';
 
 // Wrap the ChessBoard component in React.memo to prevent unnecessary re-renders
 const MemoizedChessboard = memo(Chessboard);
@@ -141,11 +141,12 @@ export default function PlayComputer() {
             <div className="bg-zinc-900 p-0 rounded-lg border border-zinc-800 mb-6 overflow-hidden">
               <div className="border-b border-zinc-800">
                 <p className="px-4 py-3 text-base font-medium flex-1 w-full text-start transition-colors text-zinc-400">
-                  Timeline
+                  Move History
                 </p>
               </div>
-              <div className="h-[500px] bg-zinc-950">
-                <TimelineMoveHistory
+              <div className="h-[500px]">
+                {/* Replace TimelineMoveHistory with FullMoveHistory */}
+                <FullMoveHistory
                   game={game}
                   onMoveClick={handleMoveClick}
                   currentMoveIndex={viewingMoveIndex}
