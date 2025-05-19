@@ -48,8 +48,9 @@ ChessboardContainer.displayName = 'ChessboardContainer';
 
 export default function PlayComputer() {
   const {
-    game,
+    // game,
     boardPosition,
+    gameMoves,
     // isEngineThinking,
     playerColor,
     viewingHistory,
@@ -147,7 +148,7 @@ export default function PlayComputer() {
               <div className="h-[500px]">
                 {/* Replace TimelineMoveHistory with FullMoveHistory */}
                 <FullMoveHistory
-                  game={game}
+                  game={gameMoves}
                   onMoveClick={handleMoveClick}
                   currentMoveIndex={viewingMoveIndex}
                 />

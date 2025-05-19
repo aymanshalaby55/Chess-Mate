@@ -11,6 +11,16 @@ interface ChessMove {
   promotion?: 'q' | 'r' | 'b' | 'n';
 }
 
+// New interface for move history with timestamps
+interface MoveRecord {
+  fen: string;
+  timestamp: number;
+  moveNotation?: string;
+  from?: Square;  // Make from optional
+  to?: Square;    // Make to optional
+  promotion?: 'q' | 'r' | 'b' | 'n';
+}
+
 export interface UseComputerGameOptions {
   onGameOver?: (winner: 'white' | 'black' | 'draw') => void;
 }
@@ -26,19 +36,48 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
   const [viewingHistory, setViewingHistory] = useState(false);
   const [viewingMoveIndex, setViewingMoveIndex] = useState(-1);
 
-  // Keep a history of all game positions
-  const gamePositionsRef = useRef<string[]>([new Chess().fen()]);
+  // Keep a history of all game positions with timestamps
+  const gameMovesRef = useRef<MoveRecord[]>([
+    {
+      fen: new Chess().fen(),
+      timestamp: Date.now(),
+      moveNotation: undefined,
+      from: undefined,
+      to: undefined,
+      promotion: undefined,
+    },
+  ]);
+
+  // Expose the game moves history as a state value
+  const [gameMoves, setGameMoves] = useState<MoveRecord[]>(
+    gameMovesRef.current
+  );
 
   // Update the game ref whenever game state changes
   useEffect(() => {
     gameRef.current = game;
     // Add position to history if it's a new move
     const currentFen = game.fen();
+
     if (
-      gamePositionsRef.current[gamePositionsRef.current.length - 1] !==
-      currentFen
+      gameMovesRef.current.length === 0 ||
+      gameMovesRef.current[gameMovesRef.current.length - 1].fen !== currentFen
     ) {
-      gamePositionsRef.current.push(currentFen);
+      const history = game.history({ verbose: true });
+      const lastMove = history.length > 0 ? history[history.length - 1] : null;
+      const moveNotation = lastMove ? lastMove.san : undefined;
+
+      const newMoveRecord: MoveRecord = {
+        fen: currentFen,
+        timestamp: Date.now(),
+        moveNotation,
+        from: lastMove?.from,
+        to: lastMove?.to,
+        promotion: lastMove?.promotion as 'q' | 'r' | 'b' | 'n' | undefined
+      };
+
+      gameMovesRef.current.push(newMoveRecord);
+      setGameMoves([...gameMovesRef.current]);
     }
 
     // Only update the board position if we're not viewing history
@@ -48,19 +87,22 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
   }, [game, viewingHistory]);
 
   // Handle game over conditions
-  const handleGameOver = useCallback((game: Chess) => {
-    if (game.isCheckmate()) {
-      const winner = game.turn() === 'w' ? 'black' : 'white';
-      options?.onGameOver?.(winner);
-    } else if (game.isDraw() || game.isStalemate()) {
-      options?.onGameOver?.('draw');
-    }
-  }, [options]);
+  const handleGameOver = useCallback(
+    (game: Chess) => {
+      if (game.isCheckmate()) {
+        const winner = game.turn() === 'w' ? 'black' : 'white';
+        options?.onGameOver?.(winner);
+      } else if (game.isDraw() || game.isStalemate()) {
+        options?.onGameOver?.('draw');
+      }
+    },
+    [options]
+  );
 
   // Make engine move
   const makeEngineMove = useCallback(
     (moveUci: string) => {
-      console.log('Applying engine move:', moveUci);
+      // console.log('Applying engine move:', moveUci);
 
       const move: ChessMove = {
         from: moveUci.substring(0, 2) as Square,
@@ -79,13 +121,13 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
           const newGame = new Chess(currentGame.fen());
 
           try {
-            console.log('Current position:', newGame.fen());
-            console.log('Attempting move:', move);
+            // console.log('Current position:', newGame.fen());
+            // console.log('Attempting move:', move);
 
             const moveResult = newGame.move(move);
 
             if (moveResult) {
-              console.log('Move successful:', moveResult);
+              // console.log('Move successful:', moveResult);
               gameRef.current = newGame;
 
               // Check for game over after engine move
@@ -153,12 +195,12 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
     const thinkingTime =
       Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
 
-    console.log(
-      `Computer thinking for ${thinkingTime}ms before calculating move...`
-    );
+    // console.log(
+    //   `Computer thinking for ${thinkingTime}ms before calculating move...`
+    // );
 
     setTimeout(() => {
-      console.log('Asking engine to move from position:', fen);
+      // console.log('Asking engine to move from position:', fen);
       engineRef.current?.evaluatePosition(fen, 10); // Depth 10 is good balance
     }, thinkingTime);
   }, []);
@@ -179,14 +221,14 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
           engineRef.current = null;
         }
 
-        console.log('Initializing engine...');
+        // console.log('Initializing engine...');
         const engine = new Engine();
         engineRef.current = engine;
 
         engine.onReady(() => {
           if (!mounted) return;
 
-          console.log('Engine is ready for play');
+          // console.log('Engine is ready for play');
           setEngineReady(true);
           setIsEngineThinking(false);
 
@@ -202,7 +244,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
         // Register for best move events
         bestMoveUnsubscribe = engine.onBestMove((bestMove) => {
           if (!mounted) return;
-          console.log('Engine best move callback:', bestMove);
+          // console.log('Engine best move callback:', bestMove);
           makeEngineMove(bestMove);
         });
       } catch (error) {
@@ -231,7 +273,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
 
       // Check if it's player's turn
       if (isEngineThinking || gameRef.current.turn() !== playerColor) {
-        console.log("Not player's turn or engine is thinking");
+        // console.log("Not player's turn or engine is thinking");
         return false;
       }
 
@@ -259,15 +301,15 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
             promotion: promotion,
           };
 
-          console.log('Player attempting move:', move);
+          // console.log('Player attempting move:', move);
           const result = newGame.move(move);
 
           if (result === null) {
-            console.log('Invalid player move');
+            // console.log('Invalid player move');
             return currentGame; // Return unchanged
           }
 
-          console.log('Player move successful:', result);
+          // console.log('Player move successful:', result);
           gameRef.current = newGame;
 
           // Schedule game over check
@@ -309,7 +351,17 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
     setIsEngineThinking(false);
     setViewingHistory(false);
     setViewingMoveIndex(-1);
-    gamePositionsRef.current = [newGame.fen()];
+
+    // Reset game moves history
+    gameMovesRef.current = [{
+      fen: newGame.fen(),
+      timestamp: Date.now(),
+      moveNotation: undefined,
+      from: undefined,
+      to: undefined,
+      promotion: undefined
+    }];
+    setGameMoves([...gameMovesRef.current]);
 
     // If player is black, engine (white) makes first move
     if (playerColor === 'b' && engineReady) {
@@ -356,12 +408,23 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
     setViewingMoveIndex(-1);
   }, []);
 
+  // Export game moves to JSON
+  const exportGameMoves = useCallback(() => {
+    return JSON.stringify(gameMovesRef.current);
+  }, []);
+
   // Create board styling for consistent appearance
-  const boardStyles = useMemo(() => ({
-    customDarkSquareStyle: { backgroundColor: '#8aad6a' },
-    customLightSquareStyle: { backgroundColor: '#f0e9c5' },
-    animationDuration: 200, // Smooth animation for better UX
-  }), []);
+  const boardStyles = useMemo(
+    () => ({
+      customDarkSquareStyle: { backgroundColor: '#8aad6a' },
+      customLightSquareStyle: { backgroundColor: '#f0e9c5' },
+      animationDuration: 200, // Smooth animation for better UX
+    }),
+    []
+  );
+
+  console.log('gameMoves',gameMoves);
+  
 
   return {
     game,
@@ -371,10 +434,12 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
     viewingHistory,
     viewingMoveIndex,
     boardStyles,
+    gameMoves, // Expose the game moves with timestamps
     onDrop,
     resetGame,
     switchColor,
     handleMoveClick,
     returnToCurrentPosition,
+    exportGameMoves, // New function to export game history
   };
 }
