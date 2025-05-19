@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { Chess, Square, Color } from 'chess.js';
-import Engine from '@/utils/Engine';
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { Chess, Square, Color } from "chess.js";
+import Engine from "@/utils/Engine";
 
 // Define a simpler move type for our use case
 interface ChessMove {
   from: Square;
   to: Square;
-  promotion?: 'q' | 'r' | 'b' | 'n';
+  promotion?: "q" | "r" | "b" | "n";
 }
 
 // New interface for move history with timestamps
@@ -16,13 +16,13 @@ interface MoveRecord {
   fen: string;
   timestamp: number;
   moveNotation?: string;
-  from?: Square;  // Make from optional
-  to?: Square;    // Make to optional
-  promotion?: 'q' | 'r' | 'b' | 'n';
+  from?: Square; // Make from optional
+  to?: Square; // Make to optional
+  promotion?: "q" | "r" | "b" | "n";
 }
 
 export interface UseComputerGameOptions {
-  onGameOver?: (winner: 'white' | 'black' | 'draw') => void;
+  onGameOver?: (winner: "white" | "black" | "draw") => void;
 }
 
 export default function useComputerGame(options?: UseComputerGameOptions) {
@@ -31,7 +31,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
   const engineRef = useRef<Engine | null>(null);
   const [isEngineThinking, setIsEngineThinking] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
-  const [playerColor, setPlayerColor] = useState<Color>('w'); // Default to white
+  const [playerColor, setPlayerColor] = useState<Color>("w"); // Default to white
   const [boardPosition, setBoardPosition] = useState(new Chess().fen());
   const [viewingHistory, setViewingHistory] = useState(false);
   const [viewingMoveIndex, setViewingMoveIndex] = useState(-1);
@@ -73,7 +73,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
         moveNotation,
         from: lastMove?.from,
         to: lastMove?.to,
-        promotion: lastMove?.promotion as 'q' | 'r' | 'b' | 'n' | undefined
+        promotion: lastMove?.promotion as "q" | "r" | "b" | "n" | undefined,
       };
 
       gameMovesRef.current.push(newMoveRecord);
@@ -90,10 +90,10 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
   const handleGameOver = useCallback(
     (game: Chess) => {
       if (game.isCheckmate()) {
-        const winner = game.turn() === 'w' ? 'black' : 'white';
+        const winner = game.turn() === "w" ? "black" : "white";
         options?.onGameOver?.(winner);
       } else if (game.isDraw() || game.isStalemate()) {
-        options?.onGameOver?.('draw');
+        options?.onGameOver?.("draw");
       }
     },
     [options]
@@ -109,7 +109,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
         to: moveUci.substring(2, 4) as Square,
         promotion:
           moveUci.length > 4
-            ? (moveUci.substring(4, 5) as 'q' | 'r' | 'b' | 'n')
+            ? (moveUci.substring(4, 5) as "q" | "r" | "b" | "n")
             : undefined,
       };
 
@@ -131,28 +131,28 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
               gameRef.current = newGame;
 
               // Check for game over after engine move
-              if (newGame.isGameOver()) {
-                // Schedule gameOver check to happen after state update
-                setTimeout(() => handleGameOver(newGame), 0);
-              }
 
               return newGame;
             } else {
               console.error(
-                'Invalid engine move (rejected by chess.js):',
+                "Invalid engine move (rejected by chess.js):",
                 move
               );
-              console.error('Current position FEN:', newGame.fen());
-              console.error('Current turn:', newGame.turn());
-              console.error('Valid moves:', newGame.moves({ verbose: true }));
+              console.error("Current position FEN:", newGame.fen());
+              console.error("Current turn:", newGame.turn());
+              console.error("Valid moves:", newGame.moves({ verbose: true }));
               return currentGame; // Return the current game state unchanged
             }
           } catch (error) {
-            console.error('Error making engine move:', error);
-            console.error('Move that caused error:', move);
-            console.error('Current FEN:', newGame.fen());
+            console.error("Error making engine move:", error);
+            console.error("Move that caused error:", move);
+            console.error("Current FEN:", newGame.fen());
             return currentGame; // Return the current game state unchanged
           } finally {
+            if (newGame.isGameOver()) {
+              // Schedule gameOver check to happen after state update
+              setTimeout(() => handleGameOver(newGame), 0);
+            }
             setIsEngineThinking(false);
           }
         });
@@ -164,7 +164,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
   // Ask engine to make a move
   const askEngineMove = useCallback((fen: string) => {
     if (!engineRef.current) {
-      console.error('Engine not initialized');
+      console.error("Engine not initialized");
       return;
     }
 
@@ -212,7 +212,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
 
     const initializeEngine = async () => {
       try {
-        if (typeof window === 'undefined') return;
+        if (typeof window === "undefined") return;
 
         // Clean up previous engine if it exists
         if (engineRef.current) {
@@ -233,7 +233,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
           setIsEngineThinking(false);
 
           // If player is black, engine (white) makes first move
-          if (playerColor === 'b' && gameRef.current.turn() === 'w') {
+          if (playerColor === "b" && gameRef.current.turn() === "w") {
             // Add initial delay before first move
             setTimeout(() => {
               askEngineMove(gameRef.current.fen());
@@ -248,7 +248,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
           makeEngineMove(bestMove);
         });
       } catch (error) {
-        console.error('Error initializing Stockfish engine:', error);
+        console.error("Error initializing Stockfish engine:", error);
       }
     };
 
@@ -277,7 +277,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
         return false;
       }
 
-      let promotion: 'q' | 'r' | 'b' | 'n' | undefined = undefined;
+      let promotion: "q" | "r" | "b" | "n" | undefined = undefined;
 
       // Use functional update to avoid stale state
       setGame((currentGame) => {
@@ -285,13 +285,13 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
           const newGame = new Chess(currentGame.fen());
           const piece = newGame.get(sourceSquare);
 
-          if (piece && piece.type === 'p') {
+          if (piece && piece.type === "p") {
             const isPromotion =
-              (piece.color === 'w' && targetSquare.charAt(1) === '8') ||
-              (piece.color === 'b' && targetSquare.charAt(1) === '1');
-
+              (piece.color === "w" && targetSquare.charAt(1) === "8") ||
+              (piece.color === "b" && targetSquare.charAt(1) === "1");
+            // HERE MUST BE SOME OPTION FOR POROMTIONS
             if (isPromotion) {
-              promotion = 'q'; // Default to queen
+              promotion = "q"; // Default to queen
             }
           }
 
@@ -325,7 +325,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
 
           return newGame;
         } catch (error) {
-          console.error('Error making player move:', error);
+          console.error("Error making player move:", error);
           return currentGame; // Return unchanged on error
         }
       });
@@ -353,18 +353,20 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
     setViewingMoveIndex(-1);
 
     // Reset game moves history
-    gameMovesRef.current = [{
-      fen: newGame.fen(),
-      timestamp: Date.now(),
-      moveNotation: undefined,
-      from: undefined,
-      to: undefined,
-      promotion: undefined
-    }];
+    gameMovesRef.current = [
+      {
+        fen: newGame.fen(),
+        timestamp: Date.now(),
+        moveNotation: undefined,
+        from: undefined,
+        to: undefined,
+        promotion: undefined,
+      },
+    ];
     setGameMoves([...gameMovesRef.current]);
 
     // If player is black, engine (white) makes first move
-    if (playerColor === 'b' && engineReady) {
+    if (playerColor === "b" && engineReady) {
       setTimeout(() => {
         askEngineMove(newGame.fen());
       }, 500);
@@ -373,7 +375,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
 
   // Switch player color
   const switchColor = useCallback(() => {
-    const newColor = playerColor === 'w' ? 'b' : 'w';
+    const newColor = playerColor === "w" ? "b" : "w";
     setPlayerColor(newColor);
 
     // Reset the game with the new color
@@ -416,15 +418,14 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
   // Create board styling for consistent appearance
   const boardStyles = useMemo(
     () => ({
-      customDarkSquareStyle: { backgroundColor: '#8aad6a' },
-      customLightSquareStyle: { backgroundColor: '#f0e9c5' },
+      customDarkSquareStyle: { backgroundColor: "#8aad6a" },
+      customLightSquareStyle: { backgroundColor: "#f0e9c5" },
       animationDuration: 200, // Smooth animation for better UX
     }),
     []
   );
 
-  console.log('gameMoves',gameMoves);
-  
+  console.log("gameMoves", gameMoves);
 
   return {
     game,
