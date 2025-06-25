@@ -44,17 +44,17 @@ export default class Engine {
         if (this.stockfish) {
             this.stockfish.onmessage = (e: MessageEvent) => {
                 const message = this.transformSFMessageData(e);
-                console.log("Engine raw message:", message.uciMessage);
+                // console.log("Engine raw message:", message.uciMessage);
 
                 // Check for readyok signal
                 if (message.uciMessage.includes("readyok") && !this.isReady) {
-                    console.log("Engine is ready");
+                    // console.log("Engine is ready");
                     this.isReady = true;
                 }
 
                 // Check for bestmove response when we're waiting for it
                 if (message.bestMove) {
-                    console.log("Engine found best move:", message.bestMove);
+                    // console.log("Engine found best move:", message.bestMove);
                     this.waitingForBestMove = false;
 
                     // Trigger any registered best move callbacks
@@ -120,7 +120,7 @@ export default class Engine {
             return;
         }
 
-        console.log("Initializing engine...");
+        // console.log("Initializing engine...");
         this.stockfish.postMessage("uci");
         this.stockfish.postMessage("isready");
     }
@@ -163,7 +163,7 @@ export default class Engine {
 
         if (depth > 24) depth = 24;
 
-        console.log(`Evaluating position: ${fen} at depth ${depth}`);
+        // console.log(`Evaluating position: ${fen} at depth ${depth}`);
         this.waitingForBestMove = true;
 
         // Reset any previous commands

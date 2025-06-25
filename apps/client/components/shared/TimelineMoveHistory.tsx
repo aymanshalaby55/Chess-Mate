@@ -1,40 +1,68 @@
-import { Chess } from "chess.js";
-import React from "react";
+'use client';
+
+import React from 'react';
+
+// Updated interface to match your MoveRecord type
+interface MoveRecord {
+  fen: string;
+  timestamp: number;
+  moveNotation?: string;
+}
 
 interface FullMoveHistoryProps {
-    game: Chess;
-    onMoveClick?: (moveIndex: number) => void;
-    currentMoveIndex?: number;
+  game: MoveRecord[];
+  onMoveClick?: (moveIndex: number) => void;
+  currentMoveIndex?: number;
 }
 
 const FullMoveHistory: React.FC<FullMoveHistoryProps> = ({
-    game,
-    onMoveClick,
-    currentMoveIndex = -1,
+  game,
+  onMoveClick,
+  currentMoveIndex = -1,
 }) => {
-    const history = game.history({ verbose: true });
-    const moveNotation = game.history();
+  // Skip the first record since it's the initial position
+  const moves = game.slice(1);
+
+  // console.log('game',game);
+  
 
   return (
-    <div className="border rounded-md p-3 bg-slate-50 shadow-sm h-full overflow-auto">
-      {history.length === 0 ? (
-        <div className="text-gray-500 text-center py-4">No moves yet</div>
+    <div className="overflow-y-auto h-full">
+      {moves.length === 0 ? (
+        <div className="py-3 px-4 text-zinc-500">No moves yet</div>
       ) : (
-        <div className="flex flex-col">
-          {history.map((move, index) => {
-            const isWhite = move.color === 'w';
+        <div>
+          {moves.map((move, index) => {
+            // Calculate actual move number (1-based)
             const moveNumber = Math.floor(index / 2) + 1;
+            
+            // Determine if white or black move (even indices are white, odd are black)
+            const isWhiteMove = index % 2 === 0;
+            
+            // Display move number only for white moves
+            const shouldShowMoveNumber = isWhiteMove;
+            
+            // Check if this move is currently selected
             const isSelected = index === currentMoveIndex;
             
             return (
-              <div 
-                key={index}
-                // onClick={() => onMoveClick?.(index)}
-                className={`py-1 px-2 border-b border-gray-100 cursor-pointer text-black ${
-                  isSelected ? 'bg-blue-100 font-bold' : 'hover:bg-gray-100'
+              <div
+                key={`move-${index}`}
+                onClick={() => onMoveClick?.(index)}
+                className={`py-3 px-4 border-b border-zinc-800 cursor-pointer flex items-center justify-between ${
+                  isSelected ? 'bg-zinc-800 font-bold' : 'hover:bg-zinc-800/50'
                 }`}
               >
-                {`${moveNumber}. ${isWhite ? 'White' : 'Black'}: ${moveNotation[index]}`}
+                <div className="flex items-center">
+                  {shouldShowMoveNumber && <span className="mr-2 text-zinc-500">{moveNumber}.</span>}
+                  <span className={isWhiteMove ? "text-white" : "text-gray-400"}>
+                    {move.moveNotation || '?'}
+                  </span>
+                </div>
+                
+                {isSelected && (
+                  <span className="text-xs text-green-400">Current</span>
+                )}
               </div>
             );
           })}
@@ -42,37 +70,6 @@ const FullMoveHistory: React.FC<FullMoveHistoryProps> = ({
       )}
     </div>
   );
-    return (
-        <div className="border rounded-md p-3 bg-slate-50 shadow-sm h-full overflow-auto">
-            {history.length === 0 ? (
-                <div className="text-gray-500 text-center py-4">
-                    No moves yet
-                </div>
-            ) : (
-                <div className="flex flex-col">
-                    {history.map((move, index) => {
-                        const isWhite = move.color === "w";
-                        const moveNumber = Math.floor(index / 2) + 1;
-                        const isSelected = index === currentMoveIndex;
-
-                        return (
-                            <div
-                                key={index}
-                                onClick={() => onMoveClick?.(index)}
-                                className={`py-1 px-2 border-b border-gray-100 cursor-pointer text-black ${
-                                    isSelected
-                                        ? "bg-blue-100 font-bold"
-                                        : "hover:bg-gray-100"
-                                }`}
-                            >
-                                {`${moveNumber}. ${isWhite ? "White" : "Black"}: ${moveNotation[index]}`}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
-    );
 };
 
 export default FullMoveHistory;

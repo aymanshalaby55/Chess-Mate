@@ -16,7 +16,7 @@ export default function DashboardPage() {
     const [userData, setUserData] = useState<UserData | null>(null);
     const router = useRouter();
 
-    console.log(userData);
+    // console.log(userData);
 
     useEffect(() => {
         const fetchData = async () => {

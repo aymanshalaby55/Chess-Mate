@@ -1,509 +1,298 @@
 "use client";
 
-import TimelineMoveHistory from "@/components/shared/TimelineMoveHistory";
-import Engine from "@/utils/Engine";
-import { Chess, Color, Square } from "chess.js";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import React, {
-    useEffect,
-    useRef,
-    useState,
-    useCallback,
-    useMemo,
-    useDeferredValue,
-} from "react";
+import { useDeferredValue, memo, useState } from "react";
 import { Chessboard } from "react-chessboard";
-
-// Define a simpler move type for our use case
-interface ChessMove {
-    from: Square;
-    to: Square;
-    promotion?: "q" | "r" | "b" | "n";
-}
+import { Chess, Square } from "chess.js";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import useComputerGame from "@/hooks/useComputerGame";
+import FullMoveHistory from "@/components/shared/TimelineMoveHistory";
 
 // Wrap the ChessBoard component in React.memo to prevent unnecessary re-renders
-const MemoizedChessboard = React.memo(Chessboard);
+const MemoizedChessboard = memo(Chessboard);
 
 // Isolate the chessboard in its own component to minimize re-renders
-const ChessboardContainer = React.memo(
-    ({
-        position,
-        orientation,
-        onPieceDrop,
-    }: // isThinking
-    {
-        position: string;
-        orientation: "white" | "black";
-        onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
-        isThinking: boolean;
-    }) => {
-        const boardProps = useMemo(
-            () => ({
-                position,
-                onPieceDrop,
-                customDarkSquareStyle: { backgroundColor: "#8aad6a" },
-                customLightSquareStyle: { backgroundColor: "#f0e9c5" },
-                boardOrientation: orientation,
-                animationDuration: 200, // Smooth animation for better UX
-            }),
-            [position, orientation, onPieceDrop],
-        );
+const ChessboardContainer = memo(
+  ({
+    position,
+    orientation,
+    onPieceDrop,
+    boardStyles,
+    selectedSquare,
+    possibleMoves,
+    onSquareClick,
+    game,
+  }: {
+    position: string;
+    orientation: "white" | "black";
+    onPieceDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+    boardStyles: {
+      customDarkSquareStyle: { backgroundColor: string };
+      customLightSquareStyle: { backgroundColor: string };
+      animationDuration: number;
+    };
+    selectedSquare: Square | null;
+    possibleMoves: Record<string, Square[]>;
+    onSquareClick: (square: Square) => void;
+    game: Chess;
+  }) => {
+    const highlightStyles = {};
 
-        return (
-            <div className="w-full aspect-square relative">
-                <MemoizedChessboard {...boardProps} />
-            </div>
-        );
-    },
+    if (selectedSquare) {
+      highlightStyles[selectedSquare] = { backgroundColor: "#FFFF99" }; // Yellow highlight for selected square
+    }
+
+    return (
+      <div className="w-full aspect-square relative border-b-4 border-yellow-100">
+        <MemoizedChessboard
+          position={position}
+          onPieceDrop={onPieceDrop}
+          customDarkSquareStyle={boardStyles.customDarkSquareStyle}
+          customLightSquareStyle={boardStyles.customLightSquareStyle}
+          boardOrientation={orientation}
+          animationDuration={boardStyles.animationDuration}
+          onSquareClick={onSquareClick}
+          customSquareStyles={highlightStyles}
+        />
+
+        {/* Overlay for possible move indicators */}
+        {selectedSquare && (
+          <div className="absolute inset-0 pointer-events-none">
+            {(possibleMoves[selectedSquare] || []).map((square) => {
+              // Calculate position based on square name (e.g., "a1", "e4")
+              const file = square.charCodeAt(0) - 97; // 'a' is 97 in ASCII
+              const rank = 8 - parseInt(square[1]);
+
+              // Calculate percentage positions to center the circle in the square
+              const left =
+                orientation === "white"
+                  ? `${(file + 0.5) * 12.5}%`
+                  : `${(7 - file + 0.5) * 12.5}%`;
+              const top =
+                orientation === "white"
+                  ? `${(rank + 0.5) * 12.5}%`
+                  : `${(7 - rank + 0.5) * 12.5}%`;
+
+              // Check if the square has a piece and if it's an opponent's piece
+              const piece = game.get(square);
+              const isOpponentPiece = piece && piece.color !== game.turn();
+
+              return (
+                <div
+                  key={square}
+                  className={`absolute z-10 w-8 h-8 rounded-full transform -translate-x-1/2 -translate-y-1/2 ${
+                    square === selectedSquare ? "bg-transparent" : ""
+                  }`}
+                  style={{
+                    left,
+                    top,
+                    backgroundColor:
+                      square === selectedSquare
+                        ? "transparent"
+                        : "rgb(99, 128, 70, 0.5)", // Semi-transparent grayish background
+                  }}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
 );
 
 // Optional: Add display name for debugging
 ChessboardContainer.displayName = "ChessboardContainer";
 
 export default function PlayComputer() {
-    const [game, setGame] = useState(() => new Chess());
-    const gameRef = useRef<Chess>(new Chess());
-    const engineRef = useRef<Engine | null>(null);
-    const [isEngineThinking, setIsEngineThinking] = useState(false);
-    const [engineReady, setEngineReady] = useState(false);
-    const [playerColor, setPlayerColor] = useState<Color>("w"); // Default to white
-    const [boardPosition, setBoardPosition] = useState(new Chess().fen());
-    // Use deferred value to reduce rendering pressure
-    const deferredBoardPosition = useDeferredValue(boardPosition);
-    const [viewingHistory, setViewingHistory] = useState(false);
-    const [viewingMoveIndex, setViewingMoveIndex] = useState(-1);
+  const {
+    game,
+    boardPosition,
+    gameMoves,
+    playerColor,
+    viewingHistory,
+    viewingMoveIndex,
+    boardStyles,
+    onDrop,
+    resetGame,
+    switchColor,
+    handleMoveClick,
+    returnToCurrentPosition,
+  } = useComputerGame({
+    onGameOver: (winner) => {
+      if (winner === "draw") {
+        alert("Game ended in a draw");
+      } else {
+        alert(`Checkmate! ${winner} wins!`);
+      }
+    },
+  });
 
-    // Keep a history of all game positions
-    const gamePositionsRef = useRef<string[]>([new Chess().fen()]);
+  // Override boardStyles to match the image's colors
+  const customBoardStyles = {
+    ...boardStyles,
+    customDarkSquareStyle: { backgroundColor: "#739552" }, // Greenish
+    customLightSquareStyle: { backgroundColor: "#EBECD0" }, // Beige
+  };
 
-    // Update the game ref whenever game state changes
-    useEffect(() => {
-        gameRef.current = game;
-        // Add position to history if it's a new move
-        const currentFen = game.fen();
-        if (
-            gamePositionsRef.current[gamePositionsRef.current.length - 1] !==
-            currentFen
-        ) {
-            gamePositionsRef.current.push(currentFen);
-        }
+  // State for tracking selected square and possible moves
+  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
+  const [possibleMoves, setPossibleMoves] = useState<Record<string, Square[]>>(
+    {}
+  );
 
-        // Only update the board position if we're not viewing history
-        if (!viewingHistory) {
-            setBoardPosition(currentFen);
-        }
-    }, [game, viewingHistory]);
+  // Handle square click to show possible moves
+  const handleSquareClick = (square: Square) => {
+    // If we're viewing history, don't allow interaction
+    if (viewingHistory) return;
 
-    // Handle game over conditions
-    const handleGameOver = useCallback((game: Chess) => {
-        if (game.isCheckmate()) {
-            alert(
-                `Checkmate! ${game.turn() === "w" ? "Black" : "White"} wins!`,
-            );
-        } else if (game.isDraw()) {
-            alert("Game ended in a draw");
-        } else if (game.isStalemate()) {
-            alert("Game ended in stalemate");
-        }
-    }, []);
+    // If we already selected this square, deselect it
+    if (selectedSquare === square) {
+      setSelectedSquare(null);
+      setPossibleMoves({});
+      return;
+    }
 
-    // Make engine move
-    const makeEngineMove = useCallback(
-        (moveUci: string) => {
-            console.log("Applying engine move:", moveUci);
+    // Check if the clicked square has a piece that belongs to the current player
+    const piece = game.get(square);
 
-            const move: ChessMove = {
-                from: moveUci.substring(0, 2) as Square,
-                to: moveUci.substring(2, 4) as Square,
-                promotion:
-                    moveUci.length > 4
-                        ? (moveUci.substring(4, 5) as "q" | "r" | "b" | "n")
-                        : undefined,
-            };
+    // If there's a piece and it belongs to the current player
+    if (piece && piece.color === game.turn()) {
+      // Get all possible moves for this piece
+      const moves: Square[] = [];
+      const legalMoves = game.moves({ square, verbose: true });
 
-            // Add a small delay before applying the move to make it feel like a piece is being grabbed
-            setTimeout(() => {
-                // Use a functional update to avoid stale state
-                setGame((currentGame) => {
-                    // Create a new game instance with the current position
-                    const newGame = new Chess(currentGame.fen());
+      // Extract target squares from legal moves
+      legalMoves.forEach((move) => moves.push(move.to));
 
-                    try {
-                        console.log("Current position:", newGame.fen());
-                        console.log("Attempting move:", move);
+      // Update state with selected square and its possible circles
+      setSelectedSquare(square);
+      setPossibleMoves({ [square]: moves });
+    } else if (selectedSquare) {
+      // If we have a selected square and clicked on a valid destination
+      const validDestinations = possibleMoves[selectedSquare] || [];
+      if (validDestinations.includes(square)) {
+        // Try to make the move
+        onDrop(selectedSquare, square);
+        // Reset selection
+        setSelectedSquare(null);
+        setPossibleMoves({});
+      } else {
+        // Clicked on an invalid square, reset selection
+        setSelectedSquare(null);
+        setPossibleMoves({});
+      }
+    }
+  };
 
-                        const moveResult = newGame.move(move);
+  // Use deferred value to reduce rendering pressure
+  const deferredBoardPosition = useDeferredValue(boardPosition);
 
-                        if (moveResult) {
-                            console.log("Move successful:", moveResult);
-                            gameRef.current = newGame;
+  return (
+    <div className="min-h-screen bg-black text-white">
+      <main className="container mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-8">
+          <Link
+            href="/dashboard"
+            className="text-green-400 flex items-center hover:underline text-sm"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back to Dashboard
+          </Link>
 
-                            // Check for game over after engine move
-                            if (newGame.isGameOver()) {
-                                // Schedule gameOver check to happen after state update
-                                setTimeout(() => handleGameOver(newGame), 0);
-                            }
-
-                            return newGame;
-                        } else {
-                            console.error(
-                                "Invalid engine move (rejected by chess.js):",
-                                move,
-                            );
-                            console.error(
-                                "Current position FEN:",
-                                newGame.fen(),
-                            );
-                            console.error("Current turn:", newGame.turn());
-                            console.error(
-                                "Valid moves:",
-                                newGame.moves({ verbose: true }),
-                            );
-                            return currentGame; // Return the current game state unchanged
-                        }
-                    } catch (error) {
-                        console.error("Error making engine move:", error);
-                        console.error("Move that caused error:", move);
-                        console.error("Current FEN:", newGame.fen());
-                        return currentGame; // Return the current game state unchanged
-                    } finally {
-                        setIsEngineThinking(false);
-                    }
-                });
-            }, 300); // 300ms delay simulates grabbing a piece
-        },
-        [handleGameOver],
-    );
-
-    // Ask engine to make a move
-    const askEngineMove = useCallback((fen: string) => {
-        if (!engineRef.current) {
-            console.error("Engine not initialized");
-            return;
-        }
-
-        setIsEngineThinking(true);
-
-        // Add a realistic delay before starting engine calculation
-        // This makes the computer appear more human-like
-        const moveCount = gameRef.current.history().length;
-
-        // Calculate a varying delay based on game phase
-        // Opening: faster moves (1-2 seconds)
-        // Middle game: more thinking (2-4 seconds)
-        // End game: careful calculation (1.5-3 seconds)
-        let minDelay = 1000; // minimum 1 second
-        let maxDelay = 2000; // default max 2 seconds
-
-        if (moveCount > 10 && moveCount < 30) {
-            // Middle game - more complex positions need more "thinking time"
-            minDelay = 2000;
-            maxDelay = 4000;
-        } else if (moveCount >= 30) {
-            // End game - critical decisions
-            minDelay = 1500;
-            maxDelay = 3000;
-        }
-
-        // Generate a random delay within the range to seem more natural
-        const thinkingTime =
-            Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
-
-        console.log(
-            `Computer thinking for ${thinkingTime}ms before calculating move...`,
-        );
-
-        setTimeout(() => {
-            console.log("Asking engine to move from position:", fen);
-            engineRef.current?.evaluatePosition(fen, 10); // Depth 10 is good balance
-        }, thinkingTime);
-    }, []);
-
-    // Initialize the engine
-    useEffect(() => {
-        let mounted = true;
-        let bestMoveUnsubscribe: (() => void) | null = null;
-
-        const initializeEngine = async () => {
-            try {
-                if (typeof window === "undefined") return;
-
-                // Clean up previous engine if it exists
-                if (engineRef.current) {
-                    if (bestMoveUnsubscribe) bestMoveUnsubscribe();
-                    engineRef.current.terminate();
-                    engineRef.current = null;
-                }
-
-                console.log("Initializing engine...");
-                const engine = new Engine();
-                engineRef.current = engine;
-
-                engine.onReady(() => {
-                    if (!mounted) return;
-
-                    console.log("Engine is ready for play");
-                    setEngineReady(true);
-                    setIsEngineThinking(false);
-
-                    // If player is black, engine (white) makes first move
-                    if (playerColor === "b" && gameRef.current.turn() === "w") {
-                        // Add initial delay before first move
-                        setTimeout(() => {
-                            askEngineMove(gameRef.current.fen());
-                        }, 1000); // First move delay
-                    }
-                });
-
-                // Register for best move events
-                bestMoveUnsubscribe = engine.onBestMove((bestMove) => {
-                    if (!mounted) return;
-                    console.log("Engine best move callback:", bestMove);
-                    makeEngineMove(bestMove);
-                });
-            } catch (error) {
-                console.error("Error initializing Stockfish engine:", error);
-            }
-        };
-
-        initializeEngine();
-
-        return () => {
-            mounted = false;
-            if (bestMoveUnsubscribe) bestMoveUnsubscribe();
-            if (engineRef.current) {
-                engineRef.current.terminate();
-            }
-        };
-    }, [playerColor, askEngineMove, makeEngineMove]);
-
-    // Handle player move
-    const onDrop = useCallback(
-        (sourceSquare: Square, targetSquare: Square): boolean => {
-            // Don't allow moves when viewing history
-            if (viewingHistory) {
-                return false;
-            }
-
-            // Check if it's player's turn
-            if (isEngineThinking || gameRef.current.turn() !== playerColor) {
-                console.log("Not player's turn or engine is thinking");
-                return false;
-            }
-
-            let promotion: "q" | "r" | "b" | "n" | undefined = undefined;
-
-            // Use functional update to avoid stale state
-            setGame((currentGame) => {
-                try {
-                    const newGame = new Chess(currentGame.fen());
-                    const piece = newGame.get(sourceSquare);
-
-                    if (piece && piece.type === "p") {
-                        const isPromotion =
-                            (piece.color === "w" &&
-                                targetSquare.charAt(1) === "8") ||
-                            (piece.color === "b" &&
-                                targetSquare.charAt(1) === "1");
-
-                        if (isPromotion) {
-                            promotion = "q"; // Default to queen
-                        }
-                    }
-
-                    const move: ChessMove = {
-                        from: sourceSquare,
-                        to: targetSquare,
-                        promotion: promotion,
-                    };
-
-                    console.log("Player attempting move:", move);
-                    const result = newGame.move(move);
-
-                    if (result === null) {
-                        console.log("Invalid player move");
-                        return currentGame; // Return unchanged
-                    }
-
-                    console.log("Player move successful:", result);
-                    gameRef.current = newGame;
-
-                    // Schedule game over check
-                    if (newGame.isGameOver()) {
-                        setTimeout(() => handleGameOver(newGame), 0);
-                    } else if (engineReady && engineRef.current) {
-                        // Add a natural pause before the computer starts thinking
-                        // This simulates a real opponent observing your move before thinking
-                        setTimeout(() => {
-                            askEngineMove(newGame.fen());
-                        }, 100);
-                    }
-
-                    return newGame;
-                } catch (error) {
-                    console.error("Error making player move:", error);
-                    return currentGame; // Return unchanged on error
-                }
-            });
-
-            return true;
-        },
-        [
-            isEngineThinking,
-            playerColor,
-            engineReady,
-            askEngineMove,
-            handleGameOver,
-            viewingHistory,
-        ],
-    );
-
-    // Reset the game
-    const resetGame = useCallback(() => {
-        const newGame = new Chess();
-        gameRef.current = newGame;
-        setGame(newGame);
-        setBoardPosition(newGame.fen());
-        setIsEngineThinking(false);
-        setViewingHistory(false);
-        setViewingMoveIndex(-1);
-        gamePositionsRef.current = [newGame.fen()];
-
-        // If player is black, engine (white) makes first move
-        if (playerColor === "b" && engineReady) {
-            setTimeout(() => {
-                askEngineMove(newGame.fen());
-            }, 500);
-        }
-    }, [playerColor, engineReady, askEngineMove]);
-
-    // Switch player color
-    const switchColor = useCallback(() => {
-        const newColor = playerColor === "w" ? "b" : "w";
-        setPlayerColor(newColor);
-
-        // Reset the game with the new color
-        setTimeout(() => {
-            resetGame();
-        }, 0);
-    }, [playerColor, resetGame]);
-
-    // Handle move click in history
-    const handleMoveClick = useCallback((moveIndex: number) => {
-        // Create a new chess instance and play back moves up to the selected index
-        const chess = new Chess();
-        const history = gameRef.current.history({ verbose: true });
-
-        for (let i = 0; i <= moveIndex && i < history.length; i++) {
-            chess.move({
-                from: history[i].from,
-                to: history[i].to,
-                promotion: history[i].promotion,
-            });
-        }
-
-        setBoardPosition(chess.fen());
-        setViewingHistory(true);
-        setViewingMoveIndex(moveIndex);
-    }, []);
-
-    // Return to current position
-    const returnToCurrentPosition = useCallback(() => {
-        setBoardPosition(gameRef.current.fen());
-        setViewingHistory(false);
-        setViewingMoveIndex(-1);
-    }, []);
-
-    return (
-        <div className="min-h-screen bg-black text-white">
-            <main className="container mx-auto max-w-7xl px-4 py-8">
-                <div className="mb-8">
-                    <Link
-                        href="/dashboard"
-                        className="text-green-400 flex items-center hover:underline text-sm"
-                    >
-                        <ArrowLeft className="mr-1 h-4 w-4" />
-                        Back to Dashboard
-                    </Link>
-
-                    <h1 className="text-3xl font-bold mt-4">
-                        Play Against Computer
-                    </h1>
-                    <p className="text-zinc-400 mt-2">
-                        Test your skills against the Stockfish chess engine
-                    </p>
-                </div>
-
-                <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Main content */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
-                            {/* Game controls */}
-                            <div className="flex flex-wrap justify-between items-center mb-4">
-                                <div className="space-x-2 mb-2 sm:mb-0">
-                                    <button
-                                        onClick={resetGame}
-                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md transition-colors"
-                                    >
-                                        New Game
-                                    </button>
-                                    <button
-                                        onClick={switchColor}
-                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md transition-colors"
-                                    >
-                                        Play as{" "}
-                                        {playerColor === "w"
-                                            ? "Black"
-                                            : "White"}
-                                    </button>
-                                </div>
-
-                                <div className="space-x-2">
-                                    <button
-                                        onClick={returnToCurrentPosition}
-                                        disabled={!viewingHistory}
-                                        className={`px-4 py-2 ${
-                                            viewingHistory
-                                                ? "bg-green-600 hover:bg-green-700"
-                                                : "bg-zinc-700 cursor-not-allowed"
-                                        } text-white rounded-md transition-colors`}
-                                    >
-                                        Return to Current
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Replace the direct Chessboard with the container component */}
-                            <ChessboardContainer
-                                position={deferredBoardPosition}
-                                orientation={
-                                    playerColor === "w" ? "white" : "black"
-                                }
-                                onPieceDrop={onDrop}
-                                isThinking={isEngineThinking}
-                            />
-                        </div>
-                    </div>
-                    {/* Sidebar */}
-                    <div className="w-full">
-                        <div className="bg-zinc-900 p-0 rounded-lg border border-zinc-800 mb-6 overflow-hidden">
-                            <div className="border-b border-zinc-800">
-                                <p className="px-4 py-3 text-base font-medium flex-1 w-full text-start transition-colors text-zinc-400">
-                                    Timeline
-                                </p>
-                            </div>
-                            <div className="h-[500px] bg-zinc-950">
-                                <TimelineMoveHistory
-                                    game={game}
-                                    onMoveClick={handleMoveClick}
-                                    currentMoveIndex={viewingMoveIndex}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
+          <h1 className="text-3xl font-bold mt-4">Play Against Computer</h1>
+          <p className="text-zinc-400 mt-2">
+            Test your skills against the Stockfish chess engine
+          </p>
         </div>
-    );
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Main content */}
+          <div className="lg:col-span-2">
+            <div className="bg-zinc-900 p-6 rounded-lg border border-zinc-800 mb-6">
+              {/* Game controls */}
+              <div className="flex flex-wrap justify-between items-center mb-4">
+                <div className="space-x-2 mb-2 sm:mb-0">
+                  <button
+                    onClick={() => {
+                      resetGame();
+                      setSelectedSquare(null);
+                      setPossibleMoves({});
+                    }}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md transition-colors"
+                  >
+                    New Game
+                  </button>
+                  <button
+                    onClick={() => {
+                      switchColor();
+                      setSelectedSquare(null);
+                      setPossibleMoves({});
+                    }}
+                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md transition-colors"
+                  >
+                    Play as {playerColor === "w" ? "Black" : "White"}
+                  </button>
+                </div>
+
+                <div className="space-x-2">
+                  <button
+                    onClick={() => {
+                      returnToCurrentPosition();
+                      setSelectedSquare(null);
+                      setPossibleMoves({});
+                    }}
+                    disabled={!viewingHistory}
+                    className={`px-4 py-2 ${
+                      viewingHistory
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-zinc-500 cursor-not-allowed"
+                    } text-white rounded-md transition-colors`}
+                  >
+                    Return to Current
+                  </button>
+                </div>
+              </div>
+
+              {/* Chess board with larger size */}
+              <div className="w-[90%] max-w-[800px] mx-auto">
+                <ChessboardContainer
+                  position={deferredBoardPosition}
+                  orientation={playerColor === "w" ? "white" : "black"}
+                  onPieceDrop={onDrop}
+                  boardStyles={customBoardStyles}
+                  selectedSquare={selectedSquare}
+                  possibleMoves={possibleMoves}
+                  onSquareClick={handleSquareClick}
+                  game={game}
+                />
+              </div>
+            </div>
+          </div>
+          {/* Sidebar */}
+          <div className="w-full">
+            <div className="bg-zinc-900 p-0 rounded-lg border border-zinc-800 mb-6 overflow-hidden">
+              <div className="border-b border-zinc-800">
+                <p className="px-4 py-3 text-base font-medium flex-1 w-full text-start transition-colors text-zinc-400">
+                  Move History
+                </p>
+              </div>
+              <div className="h-[500px]">
+                {/* Move history component */}
+                <FullMoveHistory
+                  game={gameMoves}
+                  onMoveClick={(index) => {
+                    handleMoveClick(index);
+                    setSelectedSquare(null);
+                    setPossibleMoves({});
+                  }}
+                  currentMoveIndex={viewingMoveIndex}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
