@@ -13,7 +13,7 @@
         "start:web": "pnpm run build:web && turbo start --filter web",
         "start:api": "pnpm run compose:up && pnpm run build:api && turbo start --filter api",
         "compose:up": "docker compose -f docker-compose.dev.yaml up -d --build",
-        "compose:down": "docker compose down -v",
+        "compose:down": "docker compose -f docker-compose.dev.yaml down -v",
         "typecheck": "turbo typecheck",
         "lint": "biome check .",
         "lint:fix": "biome check . --write",
