@@ -60,44 +60,51 @@ export default function PlayOnline() {
 
   // Socket event listeners
   useEffect(() => {
-    socket.on('connect', () => {
+    const onConnect = () => {
       console.log('Connected to server');
       setSocketConnected(true);
-    });
+    };
 
-    socket.on('disconnect', () => {
+    const onDisconnect = () => {
       console.log('Disconnected from server');
       setSocketConnected(false);
-    });
+    };
 
-    socket.on('test-response', (data) => {
+    const onTestResponse = (data: any) => {
       console.log('Test response:', data);
       alert(`Server responded: ${data.message}`);
-    });
+    };
 
-    socket.on('move-update', (data) => {
+    const onMoveUpdate = (data: any) => {
       console.log('Move update received:', data);
       const gameCopy = new Chess(data.fen);
       setGame(gameCopy);
-    });
+    };
 
-    socket.on('joined-room', (data) => {
+    const onJoinedRoom = (data: any) => {
       console.log('Joined room:', data);
       alert(`Joined room: ${data.roomId}`);
-    });
+    };
 
-    socket.on('player-joined', (data) => {
+    const onPlayerJoined = (data: any) => {
       console.log('Player joined:', data);
       alert(`Player joined the room: ${data.socketId}`);
-    });
+    };
+
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    socket.on('test-response', onTestResponse);
+    socket.on('move-update', onMoveUpdate);
+    socket.on('joined-room', onJoinedRoom);
+    socket.on('player-joined', onPlayerJoined);
 
     return () => {
-      socket.off('connect');
-      socket.off('disconnect');
-      socket.off('test-response');
-      socket.off('move-update');
-      socket.off('joined-room');
-      socket.off('player-joined');
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      socket.off('test-response', onTestResponse);
+      socket.off('move-update', onMoveUpdate);
+      socket.off('joined-room', onJoinedRoom);
+      socket.off('player-joined', onPlayerJoined);
     };
   }, []);
 
