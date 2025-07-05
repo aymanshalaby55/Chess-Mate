@@ -2,18 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Chess, Color } from "chess.js";
-
-export interface ChessGameState {
-  game: Chess;
-  gameRef: React.MutableRefObject<Chess>;
-  boardPosition: string;
-  setBoardPosition: React.Dispatch<React.SetStateAction<string>>;
-  playerColor: Color;
-  setPlayerColor: React.Dispatch<React.SetStateAction<Color>>;
-  isPlayerTurn: boolean;
-  setIsPlayerTurn: React.Dispatch<React.SetStateAction<boolean>>;
-  setGame: any;
-}
+import { ChessGameState } from "@/types";
 
 export default function useChessGame(): ChessGameState {
   const [game, setGame] = useState(() => new Chess());

@@ -1,19 +1,9 @@
 'use client';
 
+import { FullMoveHistoryProps } from '@/types';
 import React from 'react';
 
-// Updated interface to match your MoveRecord type
-interface MoveRecord {
-  fen: string;
-  timestamp: number;
-  moveNotation?: string;
-}
 
-interface FullMoveHistoryProps {
-  game: MoveRecord[];
-  onMoveClick?: (moveIndex: number) => void;
-  currentMoveIndex?: number;
-}
 
 const FullMoveHistory: React.FC<FullMoveHistoryProps> = ({
   game,

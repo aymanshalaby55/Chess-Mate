@@ -3,26 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Engine from "@/utils/Engine";
 import { Chess, Square } from "chess.js";
-
-interface ChessMove {
-  from: Square;
-  to: Square;
-  promotion?: "q" | "r" | "b" | "n";
-}
-
-interface UseChessEngineProps {
-  gameRef: React.MutableRefObject<Chess>;
-  playerColor: "w" | "b";
-  setGame: React.Dispatch<React.SetStateAction<Chess>>;
-  setIsPlayerTurn: React.Dispatch<React.SetStateAction<boolean>>;
-  handleGameOver: (game: Chess) => void;
-}
-
-interface ChessEngineState {
-  isEngineThinking: boolean;
-  engineReady: boolean;
-  askEngineMove: (fen: string) => void;
-}
+import { ChessMove, UseChessEngineProps, ChessEngineState } from "@/types";
 
 export default function useChessEngine({
   gameRef,

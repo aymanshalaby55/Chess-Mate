@@ -3,27 +3,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Chess, Square, Color } from "chess.js";
 import Engine from "@/utils/Engine";
-
-// Define a simpler move type for our use case
-interface ChessMove {
-  from: Square;
-  to: Square;
-  promotion?: "q" | "r" | "b" | "n";
-}
-
-// New interface for move history with timestamps
-interface MoveRecord {
-  fen: string;
-  timestamp: number;
-  moveNotation?: string;
-  from?: Square; // Make from optional
-  to?: Square; // Make to optional
-  promotion?: "q" | "r" | "b" | "n";
-}
-
-export interface UseComputerGameOptions {
-  onGameOver?: (winner: "white" | "black" | "draw") => void;
-}
+import { ChessMove, MoveRecord, UseComputerGameOptions } from "@/types";
 
 export default function useComputerGame(options?: UseComputerGameOptions) {
   const [game, setGame] = useState(() => new Chess());
@@ -425,7 +405,7 @@ export default function useComputerGame(options?: UseComputerGameOptions) {
     []
   );
 
-  console.log("gameMoves", gameMoves);
+  // console.log("gameMoves", gameMoves);
 
   return {
     game,
