@@ -1,19 +1,9 @@
 "use client";
 
-import { Chess, Color, Square } from "chess.js";
-import useChessGame from "./useChessGame";
-import useChessEngine from "./useChessEngine";
-import useMoveHandler from "./useMoveHandler";
-import useMoveHistory from "./useMoveHistory";
-import useGameControls from "./useGameControls";
-import { useState } from "react";
-import useBoardStyles from "./useBoardStyles";
-import { useCallback } from "react";
-// import useBoardStyles from "./useBoardStyles";
-
-export interface UseComputerGameOptions {
-  onGameOver?: (winner: "white" | "black" | "draw") => void;
-}
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { Chess, Square, Color } from "chess.js";
+import Engine from "@/utils/Engine";
+import { ChessMove, MoveRecord, UseComputerGameOptions } from "@/types";
 
 export interface ComputerGameState {
   game: any; // Chess instance
@@ -143,7 +133,7 @@ export default function useComputerGame(
     setGameMoves,
   });
 
-  const boardStyles = useBoardStyles();
+  // console.log("gameMoves", gameMoves);
 
   return {
     game,

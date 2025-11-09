@@ -1,16 +1,20 @@
-import Hero from "@/components/shared/Hero";
-// import CTA from '@/components/shared/CTA';
-// import Feature from '@/components/shared/Feature';
-// import Footer from '@/components/shared/Footer';
-// import Testimonials from '@/components/shared/Testimonials';
+import Hero from '@/components/shared/Hero';
+
 export default function Home() {
-    return (
-        <div className="text-white ">
-            <Hero />
-            {/* <Feature />
-      <Testimonials />
-      <CTA />
-      <Footer /> */}
-        </div>
-    );
+  return (
+    /**
+     TESTING:
+     - Hero component
+     - PlayNow component
+     - Chessboard component
+     - SignInButton component
+     - SignUpButton component
+     - SignOutButton component
+     - SignInButton component
+     - SignUpButton component
+     */
+    <div>
+      <Hero />
+    </div>
+  );
 }

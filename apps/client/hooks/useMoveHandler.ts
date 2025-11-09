@@ -2,30 +2,7 @@
 
 import { useCallback } from "react";
 import { Chess, Square, Color } from "chess.js";
-
-interface ChessMove {
-  from: Square;
-  to: Square;
-  promotion?: "q" | "r" | "b" | "n";
-}
-
-interface UseMoveHandlerProps {
-  gameRef: React.MutableRefObject<Chess>;
-  setGame: React.Dispatch<React.SetStateAction<Chess>>;
-  playerColor: Color;
-  isEngineThinking: boolean;
-  engineReady: boolean;
-  askEngineMove: (fen: string) => void;
-  viewingHistory: boolean;
-  isPlayerTurn: boolean;
-  setIsPlayerTurn: React.Dispatch<React.SetStateAction<boolean>>;
-  onGameOver?: (winner: "white" | "black" | "draw") => void;
-  handleGameOver: (game: Chess) => void;
-}
-
-interface MoveHandlerState {
-  onDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
-}
+import { ChessMove, UseMoveHandlerProps, MoveHandlerState } from "@/types";
 
 export default function useMoveHandler({
   gameRef,
@@ -126,5 +103,5 @@ export default function useMoveHandler({
     ]
   );
 
-  return { onDrop, handleGameOver };
+  return { onDrop };
 }

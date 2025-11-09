@@ -1,60 +1,9 @@
 'use client';
 
-import React, { useCallback, useRef } from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faChessKing,
-  faChessQueen,
-  faChessRook,
-  faChessBishop,
-  faChessKnight,
-  faChessPawn,
-} from '@fortawesome/free-solid-svg-icons';
-import { JSX } from 'react';
+import { FullMoveHistoryProps } from '@/types';
+import React from 'react';
 
-// Chess piece icons for move notation
-const pieceIcons: { [key: string]: JSX.Element } = {
-  K: <FontAwesomeIcon icon={faChessKing} />,
-  Q: <FontAwesomeIcon icon={faChessQueen} />,
-  R: <FontAwesomeIcon icon={faChessRook} />,
-  B: <FontAwesomeIcon icon={faChessBishop} />,
-  N: <FontAwesomeIcon icon={faChessKnight} />,
-  P: <FontAwesomeIcon icon={faChessPawn} />,
-  k: <FontAwesomeIcon icon={faChessKing} />,
-  q: <FontAwesomeIcon icon={faChessQueen} />,
-  r: <FontAwesomeIcon icon={faChessRook} />,
-  b: <FontAwesomeIcon icon={faChessBishop} />,
-  n: <FontAwesomeIcon icon={faChessKnight} />,
-  p: <FontAwesomeIcon icon={faChessPawn} />,
-};
 
-// Format move notation to include piece icons
-const formatMoveNotation = (notation: string | undefined): React.ReactNode => {
-  if (!notation) return <span className="text-zinc-500">?</span>;
-
-  const pieceSymbol = pieceIcons[notation[0]];
-  if (pieceSymbol) {
-    return (
-      <>
-        {pieceSymbol} {notation.slice(1)}
-      </>
-    );
-  }
-
-  return notation;
-};
-
-interface MoveRecord {
-  fen: string;
-  timestamp: number;
-  moveNotation?: string;
-}
-
-interface FullMoveHistoryProps {
-  game: MoveRecord[];
-  onMoveClick?: (moveIndex: number) => void;
-  currentMoveIndex?: number;
-}
 
 const FullMoveHistory: React.FC<FullMoveHistoryProps> = ({
   game,
