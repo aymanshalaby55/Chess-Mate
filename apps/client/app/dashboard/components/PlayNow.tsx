@@ -35,7 +35,7 @@ const PlayNow = () => {
                                 Play Vs Computer
                             </Button>
                         </Link>
-                        <Link href={"/"}>
+                        <Link href={"/play-online"}>
                             <Button className="w-full bg-green-600 hover:bg-green-700 text-white cursor-pointer">
                                 Play Online
                             </Button>

@@ -1,2 +1,2 @@
-# for later
-# pnpm exec lint-staged
+#!/usr/bin/env sh
+. "$(dirname "$0")/h"
