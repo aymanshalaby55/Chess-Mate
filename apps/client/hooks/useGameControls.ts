@@ -1,27 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { Chess, Color } from "chess.js";
-import { MoveRecord } from "./useMoveHistory";
-
-interface UseGameControlsProps {
-  gameRef: React.MutableRefObject<Chess>;
-  setGame: React.Dispatch<React.SetStateAction<Chess>>;
-  setBoardPosition: React.Dispatch<React.SetStateAction<string>>;
-  playerColor: Color;
-  setPlayerColor: React.Dispatch<React.SetStateAction<Color>>;
-  engineReady: boolean;
-  askEngineMove: (fen: string) => void;
-  setIsPlayerTurn: React.Dispatch<React.SetStateAction<boolean>>;
-  gameMovesRef: React.MutableRefObject<MoveRecord[]>;
-  setGameMoves: React.Dispatch<React.SetStateAction<MoveRecord[]>>;
-}
-
-interface GameControlsState {
-  resetGame: () => void;
-  switchColor: () => void;
-  exportGameMoves: () => string;
-}
+import { Chess } from "chess.js";
+import { UseGameControlsProps, GameControlsState } from "@/types";
 
 export default function useGameControls({
   gameRef,

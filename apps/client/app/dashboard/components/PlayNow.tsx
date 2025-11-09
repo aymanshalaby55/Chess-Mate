@@ -1,13 +1,13 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import { Users } from "lucide-react";
-import Link from "next/link";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Users } from 'lucide-react';
+import Link from 'next/link';
 
 const PlayNow = () => {
     return (

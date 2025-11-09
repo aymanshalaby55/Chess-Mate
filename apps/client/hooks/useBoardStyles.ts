@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-
-interface BoardStyles {
-  customDarkSquareStyle: { backgroundColor: string };
-  customLightSquareStyle: { backgroundColor: string };
-  animationDuration: number;
-}
+import { BoardStyles } from "@/types";
 
 export default function useBoardStyles(): BoardStyles {
   return useMemo(

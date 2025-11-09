@@ -1,33 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Chess, Square } from "chess.js";
-
-interface MoveRecord {
-  fen: string;
-  timestamp: number;
-  moveNotation?: string;
-  from?: Square;
-  to?: Square;
-  promotion?: "q" | "r" | "b" | "n";
-}
-
-interface UseMoveHistoryProps {
-  game: Chess;
-  gameRef: React.MutableRefObject<Chess>;
-  viewingHistory: boolean;
-  setBoardPosition: React.Dispatch<React.SetStateAction<string>>;
-  setGameMoves: React.Dispatch<React.SetStateAction<MoveRecord[]>>;
-}
-
-interface MoveHistoryState {
-  gameMoves: MoveRecord[];
-  viewingHistory: boolean;
-  viewingMoveIndex: number;
-  handleMoveClick: (moveIndex: number) => void;
-  returnToCurrentPosition: () => void;
-  gameMovesRef: React.MutableRefObject<MoveRecord[]>;
-}
+import { Chess } from "chess.js";
+import { MoveRecord, UseMoveHistoryProps, MoveHistoryState } from "@/types";
 
 export default function useMoveHistory({
   game,
@@ -111,6 +86,5 @@ export default function useMoveHistory({
     handleMoveClick,
     returnToCurrentPosition,
     gameMovesRef,
-    setGameMoves,
   };
 }
