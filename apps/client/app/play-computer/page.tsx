@@ -7,8 +7,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import useComputerGame from "@/hooks/useComputerGame";
 import FullMoveHistory from "@/components/shared/TimelineMoveHistory";
+import { usePossiableMoves } from "@/hooks/usePossiableMoves";
+import { toast } from "sonner";
 
-// Wrap the ChessBoard component in React.memo to prevent unnecessary re-renders
+// Wrap the Chessboard component in React.memo to prevent unnecessary re-renders
 const MemoizedChessboard = memo(Chessboard);
 
 // Isolate the chessboard in its own component to minimize re-renders
@@ -42,11 +44,20 @@ const ChessboardContainer = memo(
       highlightStyles[selectedSquare] = { backgroundColor: "#FFFF99" }; // Yellow highlight for selected square
     }
 
+    // Wrap the onPieceDrop to include toast notification
+    const handlePieceDrop = (sourceSquare: Square, targetSquare: Square) => {
+      const isValidMove = onPieceDrop(sourceSquare, targetSquare);
+      if (isValidMove) {
+        toast.success(`Moved piece from ${sourceSquare} to ${targetSquare}!`);
+      }
+      return isValidMove;
+    };
+
     return (
       <div className="w-full aspect-square relative border-b-4 border-yellow-100">
         <MemoizedChessboard
           position={position}
-          onPieceDrop={onPieceDrop}
+          onPieceDrop={handlePieceDrop} // Use the wrapped function
           customDarkSquareStyle={boardStyles.customDarkSquareStyle}
           customLightSquareStyle={boardStyles.customLightSquareStyle}
           boardOrientation={orientation}
@@ -59,11 +70,8 @@ const ChessboardContainer = memo(
         {selectedSquare && (
           <div className="absolute inset-0 pointer-events-none">
             {(possibleMoves[selectedSquare] || []).map((square) => {
-              // Calculate position based on square name (e.g., "a1", "e4")
-              const file = square.charCodeAt(0) - 97; // 'a' is 97 in ASCII
+              const file = square.charCodeAt(0) - 97;
               const rank = 8 - parseInt(square[1]);
-
-              // Calculate percentage positions to center the circle in the square
               const left =
                 orientation === "white"
                   ? `${(file + 0.5) * 12.5}%`
@@ -73,10 +81,8 @@ const ChessboardContainer = memo(
                   ? `${(rank + 0.5) * 12.5}%`
                   : `${(7 - rank + 0.5) * 12.5}%`;
 
-              // Check if the square has a piece and if it's an opponent's piece
               const piece = game.get(square);
               const isOpponentPiece = piece && piece.color !== game.turn();
-
               return (
                 <div
                   key={square}
@@ -89,7 +95,7 @@ const ChessboardContainer = memo(
                     backgroundColor:
                       square === selectedSquare
                         ? "transparent"
-                        : "rgb(99, 128, 70, 0.5)", // Semi-transparent grayish background
+                        : "rgb(99, 128, 70, 0.5)",
                   }}
                 />
               );
@@ -119,70 +125,37 @@ export default function PlayComputer() {
     handleMoveClick,
     returnToCurrentPosition,
   } = useComputerGame({
-    onGameOver: (winner) => {
+    onGameOver: (winner: string) => {
+      console.log("Game Over:", winner);
+
       if (winner === "draw") {
-        alert("Game ended in a draw");
+        toast.info("Game ended in a draw!", {
+          style: {
+            color: "#333",
+            backgroundColor: "#f0f0f0",
+            border: "1px solid #ccc",
+          },
+        });
       } else {
-        alert(`Checkmate! ${winner} wins!`);
+        toast.success(`${winner === "w" ? "White" : "Black"} wins the game!`, {
+          style: {
+            color: "#fff",
+            backgroundColor: winner === playerColor ? "#4caf50" : "#50a36c", // green or red
+            border: "1px solid #333",
+          },
+        });
       }
     },
   });
 
+  const { possibleMoves, handleSquareClick, selectedSquare } =
+    usePossiableMoves({ onDrop, game });
+
   // Override boardStyles to match the image's colors
   const customBoardStyles = {
     ...boardStyles,
-    customDarkSquareStyle: { backgroundColor: "#739552" }, // Greenish
+    customDarkSquareStyle: { backgroundColor: "#83a85d" }, // Greenish
     customLightSquareStyle: { backgroundColor: "#EBECD0" }, // Beige
-  };
-
-  // State for tracking selected square and possible moves
-  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
-  const [possibleMoves, setPossibleMoves] = useState<Record<string, Square[]>>(
-    {}
-  );
-
-  // Handle square click to show possible moves
-  const handleSquareClick = (square: Square) => {
-    // If we're viewing history, don't allow interaction
-    if (viewingHistory) return;
-
-    // If we already selected this square, deselect it
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setPossibleMoves({});
-      return;
-    }
-
-    // Check if the clicked square has a piece that belongs to the current player
-    const piece = game.get(square);
-
-    // If there's a piece and it belongs to the current player
-    if (piece && piece.color === game.turn()) {
-      // Get all possible moves for this piece
-      const moves: Square[] = [];
-      const legalMoves = game.moves({ square, verbose: true });
-
-      // Extract target squares from legal moves
-      legalMoves.forEach((move) => moves.push(move.to));
-
-      // Update state with selected square and its possible circles
-      setSelectedSquare(square);
-      setPossibleMoves({ [square]: moves });
-    } else if (selectedSquare) {
-      // If we have a selected square and clicked on a valid destination
-      const validDestinations = possibleMoves[selectedSquare] || [];
-      if (validDestinations.includes(square)) {
-        // Try to make the move
-        onDrop(selectedSquare, square);
-        // Reset selection
-        setSelectedSquare(null);
-        setPossibleMoves({});
-      } else {
-        // Clicked on an invalid square, reset selection
-        setSelectedSquare(null);
-        setPossibleMoves({});
-      }
-    }
   };
 
   // Use deferred value to reduce rendering pressure
@@ -283,8 +256,6 @@ export default function PlayComputer() {
                   game={gameMoves}
                   onMoveClick={(index) => {
                     handleMoveClick(index);
-                    setSelectedSquare(null);
-                    setPossibleMoves({});
                   }}
                   currentMoveIndex={viewingMoveIndex}
                 />
