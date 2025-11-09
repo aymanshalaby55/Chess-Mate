@@ -29,7 +29,13 @@ export default function PlayComputer() {
       if (winner === 'draw') {
         alert('Game ended in a draw');
       } else {
-        alert(`Checkmate! ${winner} wins!`);
+        toast.success(`${winner === "w" ? "White" : "Black"} wins the game!`, {
+          style: {
+            color: "#fff",
+            backgroundColor: winner === playerColor ? "#4caf50" : "#50a36c", // green or red
+            border: "1px solid #333",
+          },
+        });
       }
     },
   });
@@ -42,56 +48,6 @@ export default function PlayComputer() {
     ...boardStyles,
     customDarkSquareStyle: { backgroundColor: '#739552' }, // Greenish
     customLightSquareStyle: { backgroundColor: '#EBECD0' }, // Beige
-  };
-
-  // State for tracking selected square and possible moves
-  const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
-  const [possibleMoves, setPossibleMoves] = useState<Record<string, Square[]>>(
-    {}
-  );
-
-  // Handle square click to show possible moves
-  const handleSquareClick = (square: Square) => {
-    // If we're viewing history, don't allow interaction
-    if (viewingHistory) return;
-
-    // If we already selected this square, deselect it
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setPossibleMoves({});
-      return;
-    }
-
-    // Check if the clicked square has a piece that belongs to the current player
-    const piece = game.get(square);
-
-    // If there's a piece and it belongs to the current player
-    if (piece && piece.color === game.turn()) {
-      // Get all possible moves for this piece
-      const moves: Square[] = [];
-      const legalMoves = game.moves({ square, verbose: true });
-
-      // Extract target squares from legal moves
-      legalMoves.forEach((move) => moves.push(move.to));
-
-      // Update state with selected square and its possible circles
-      setSelectedSquare(square);
-      setPossibleMoves({ [square]: moves });
-    } else if (selectedSquare) {
-      // If we have a selected square and clicked on a valid destination
-      const validDestinations = possibleMoves[selectedSquare] || [];
-      if (validDestinations.includes(square)) {
-        // Try to make the move
-        onDrop(selectedSquare, square);
-        // Reset selection
-        setSelectedSquare(null);
-        setPossibleMoves({});
-      } else {
-        // Clicked on an invalid square, reset selection
-        setSelectedSquare(null);
-        setPossibleMoves({});
-      }
-    }
   };
 
   // Use deferred value to reduce rendering pressure
@@ -193,8 +149,6 @@ export default function PlayComputer() {
                   game={gameMoves}
                   onMoveClick={(index) => {
                     handleMoveClick(index);
-                    setSelectedSquare(null);
-                    setPossibleMoves({});
                   }}
                   currentMoveIndex={viewingMoveIndex}
                 />
