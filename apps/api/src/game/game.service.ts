@@ -29,7 +29,7 @@ export class GameService {
     const game = await this.prisma.game.create({
       data: {
         player1_id: userId,
-        player2_id: userId, // For PvC, same user as both players
+        player2_id: null,
         isComputer: true,
         computerSide,
         boardStatus: chess.fen(),

@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+body {
+    @apply bg-gradient-to-b from-black via-gray-900 to-black;
+}
+/* bg-[radial-gradient(circle_at_center,#4ade80_0,transparent_80%)] */

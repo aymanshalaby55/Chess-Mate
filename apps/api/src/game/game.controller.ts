@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { Side } from '@prisma/client';
 import { GameService } from './game.service';
+import { GetUser } from 'src/auth/decorator';
 // import { JwtGuard } from '../auth/guard';
 // import { GetUser } from '../auth/decorator';
 
@@ -10,8 +11,10 @@ export class GameController {
   constructor(private gameService: GameService) {}
 
   @Post('computer')
-  createComputerGame(@Body('side') side: Side) {
-    return this.gameService.createGamePvc(1, side);
+  createComputerGame(@GetUser('id') userId: number, @Body('side') side?: Side) {
+    const playerSide = side ?? (Math.random() < 0.5 ? Side.black : Side.black);
+
+    return this.gameService.createGamePvc(userId, playerSide);
   }
 
   // @Get()
