@@ -11,14 +11,12 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
-  // Specify the port if different from your main app port
-  port: 3000, // or remove this line if using same port as your main app
+  port: 3000,
   cors: {
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST'],
     credentials: true,
   },
-  // Add these important options
   transports: ['polling', 'websocket'],
   allowEIO3: true,
 })

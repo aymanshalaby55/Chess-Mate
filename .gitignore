@@ -3,7 +3,7 @@
 
 # Vercel
 .vercel
-
+.cursor
 
 # Misc
 .DS_Store
