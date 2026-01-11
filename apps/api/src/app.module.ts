@@ -6,6 +6,8 @@ import { GameModule } from './game/game.module';
 import { MovesModule } from './moves/moves.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
+import { RatingModule } from './rating/rating.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { UserModule } from './user/user.module';
     AuthModule,
     GameModule,
     MovesModule,
+    RatingModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [AppService],

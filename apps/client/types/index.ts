@@ -3,10 +3,15 @@ import { Chess, Square, Color } from 'chess.js';
 
 // User types
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name: string;
   picture?: string;
+  rating?: number;
+  gamesPlayed?: number;
+  wins?: number;
+  losses?: number;
+  draws?: number;
 }
 
 export interface UserContextType {
@@ -62,6 +67,7 @@ export interface MoveRecord {
   from?: Square;
   to?: Square;
   promotion?: 'q' | 'r' | 'b' | 'n';
+  timeSpent?: number;
 }
 
 export interface FullMoveHistoryProps {
@@ -69,6 +75,7 @@ export interface FullMoveHistoryProps {
   onMoveClick?: (moveIndex: number) => void;
   currentMoveIndex?: number;
 }
+
 // Chess Game State
 export interface ChessGameState {
   game: Chess;
@@ -82,6 +89,39 @@ export interface ChessGameState {
   setGame: any;
 }
 
+// Time Control
+export type TimeControl =
+  | 'bullet_1min'
+  | 'bullet_2min'
+  | 'blitz_3min'
+  | 'blitz_5min'
+  | 'rapid_10min'
+  | 'rapid_15min'
+  | 'rapid_30min'
+  | 'classical_60min';
+
+export const TIME_CONTROL_LABELS: Record<TimeControl, string> = {
+  bullet_1min: '1 min (Bullet)',
+  bullet_2min: '2 min (Bullet)',
+  blitz_3min: '3 min (Blitz)',
+  blitz_5min: '5 min (Blitz)',
+  rapid_10min: '10 min (Rapid)',
+  rapid_15min: '15 min (Rapid)',
+  rapid_30min: '30 min (Rapid)',
+  classical_60min: '60 min (Classical)',
+};
+
+export const TIME_CONTROL_MS: Record<TimeControl, number> = {
+  bullet_1min: 60000,
+  bullet_2min: 120000,
+  blitz_3min: 180000,
+  blitz_5min: 300000,
+  rapid_10min: 600000,
+  rapid_15min: 900000,
+  rapid_30min: 1800000,
+  classical_60min: 3600000,
+};
+
 // Online Game Options
 export interface UseOnlineGameOptions {
   onGameOver?: (winner: 'white' | 'black' | 'draw') => void;
@@ -93,6 +133,98 @@ export interface UseOnlineGameOptions {
 // Computer Game Options
 export interface UseComputerGameOptions {
   onGameOver?: (winner: 'white' | 'black' | 'draw') => void;
+  gameId?: number;
+  timeControl?: TimeControl;
+}
+
+// Game from API
+export interface Game {
+  id: number;
+  player1_id: number;
+  player2_id: number | null;
+  player1?: User;
+  player2?: User;
+  isComputer: boolean;
+  computerSide?: 'white' | 'black';
+  winnerId?: number;
+  status: GameStatus;
+  boardStatus: string;
+  inviteCode?: string;
+  isPrivate: boolean;
+  timeControl?: TimeControl;
+  initialTime?: number;
+  increment?: number;
+  player1TimeLeft?: number;
+  player2TimeLeft?: number;
+  createdAt: string;
+  lastMoveAt: string;
+  moves?: Move[];
+}
+
+export type GameStatus =
+  | 'waiting'
+  | 'ongoing'
+  | 'white_won'
+  | 'black_won'
+  | 'draw'
+  | 'resigned'
+  | 'timeout'
+  | 'abandoned';
+
+export interface Move {
+  id: number;
+  gameId: number;
+  moveNumber: number;
+  from: string;
+  to: string;
+  piece: string;
+  promotion?: string;
+  capture: boolean;
+  check: boolean;
+  checkmate: boolean;
+  fen: string;
+  timeSpent?: number;
+  createdAt: string;
+}
+
+// Chat Message
+export interface ChatMessage {
+  id: number;
+  gameId: number;
+  userId: number;
+  user: {
+    id: number;
+    name: string;
+    picture?: string;
+  };
+  message: string;
+  createdAt: string;
+}
+
+// Rating Change
+export interface RatingChange {
+  oldRating: number;
+  newRating: number;
+  change: number;
+}
+
+// Game Over Event
+export interface GameOverEvent {
+  winnerId: number | null;
+  reason: 'checkmate' | 'timeout' | 'resigned' | 'abandoned' | 'draw';
+  status: GameStatus;
+  ratingChanges?: {
+    player1: RatingChange;
+    player2: RatingChange;
+  };
+}
+
+// Player Info for matchmaking
+export interface MatchmakingPlayer {
+  odId: number;
+  odName: string;
+  rating: number;
+  timeControl: TimeControl;
 }
 
 // Move History
@@ -187,4 +319,25 @@ export interface ChessboardContainerProps {
   possibleMoves: Record<string, Square[]>;
   onSquareClick: (square: Square) => void;
   game: Chess;
+}
+
+// User Stats
+export interface UserStats {
+  rating: number;
+  gamesPlayed: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  recentGames: Game[];
+  ratingHistory: RatingHistoryEntry[];
+}
+
+export interface RatingHistoryEntry {
+  id: number;
+  userId: number;
+  rating: number;
+  gameId?: number;
+  change: number;
+  createdAt: string;
 }

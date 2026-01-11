@@ -3,22 +3,55 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Chess, Square, Color } from "chess.js";
 import { io, Socket } from 'socket.io-client';
-import { MoveRecord, UseOnlineGameOptions } from "@/types";
+import { MoveRecord, ChatMessage, GameOverEvent } from "@/types";
+
+export interface UseOnlineGameOptions {
+  onGameOver?: (data: GameOverEvent) => void;
+  onOpponentJoined?: () => void;
+  onOpponentLeft?: () => void;
+  gameId?: number;
+  inviteCode?: string | null; // Add invite code option
+  userId?: number;
+  userName?: string;
+  serverUrl?: string;
+}
 
 export default function useOnlineGame(options?: UseOnlineGameOptions) {
   const [game, setGame] = useState(() => new Chess());
   const gameRef = useRef<Chess>(new Chess());
   const socketRef = useRef<Socket | null>(null);
+  
+  // Connection state
   const [isConnected, setIsConnected] = useState(false);
   const [isMyTurn, setIsMyTurn] = useState(false);
-  const [playerColor, setPlayerColor] = useState<Color>("w"); // Default to white
+  const [playerColor, setPlayerColor] = useState<Color>("w");
+  const [opponentConnected, setOpponentConnected] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
+  
+  // Board state
   const [boardPosition, setBoardPosition] = useState(new Chess().fen());
   const [viewingHistory, setViewingHistory] = useState(false);
   const [viewingMoveIndex, setViewingMoveIndex] = useState(-1);
-  const [opponentConnected, setOpponentConnected] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
+  
+  // Timer state
+  const [whiteTimeLeft, setWhiteTimeLeft] = useState(600000);
+  const [blackTimeLeft, setBlackTimeLeft] = useState(600000);
+  
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  
+  // Game over state
+  const [gameOverData, setGameOverData] = useState<GameOverEvent | null>(null);
+  
+  // Opponent info
+  const [opponent, setOpponent] = useState<{
+    id: number;
+    name: string;
+    rating?: number;
+    picture?: string;
+  } | null>(null);
 
-  // Keep a history of all game positions with timestamps
+  // Move history
   const gameMovesRef = useRef<MoveRecord[]>([
     {
       fen: new Chess().fen(),
@@ -29,30 +62,50 @@ export default function useOnlineGame(options?: UseOnlineGameOptions) {
       promotion: undefined,
     },
   ]);
-
-  // Expose the game moves history as a state value
-  const [gameMoves, setGameMoves] = useState<MoveRecord[]>(
-    gameMovesRef.current
-  );
+  const [gameMoves, setGameMoves] = useState<MoveRecord[]>(gameMovesRef.current);
 
   // Initialize socket connection
   useEffect(() => {
+    // Don't connect if we don't have required data
+    if (!options?.userId || !options?.userName) {
+      return;
+    }
+
     const serverUrl = options?.serverUrl || 'http://localhost:4040';
-    const socket = io(serverUrl);
+    const socket = io(serverUrl, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+    });
     socketRef.current = socket;
 
     const onConnect = () => {
       console.log('Connected to server');
       setIsConnected(true);
       
-      // Join the game room
-      const gameId = options?.gameId || 'default-game';
-      const playerId = options?.playerId || `player-${Date.now()}`;
-      
-      socket.emit('join-room', {
-        gameId,
-        playerId
+      // Authenticate
+      socket.emit('authenticate', {
+        odId: options.userId,
+        odName: options.userName,
       });
+      
+      // If we have an invite code, join via invite first
+      if (options?.inviteCode && options?.userId && options?.userName) {
+        console.log('Joining via invite code:', options.inviteCode);
+        socket.emit('join-by-invite', {
+          inviteCode: options.inviteCode,
+          odId: options.userId,
+          odName: options.userName,
+        });
+      } 
+      // Otherwise just join the game room directly
+      else if (options?.gameId && options?.userId && options?.userName) {
+        console.log('Joining game directly:', options.gameId);
+        socket.emit('join-game', {
+          gameId: options.gameId,
+          odId: options.userId,
+          odName: options.userName,
+        });
+      }
     };
 
     const onDisconnect = () => {
@@ -61,103 +114,172 @@ export default function useOnlineGame(options?: UseOnlineGameOptions) {
       setOpponentConnected(false);
     };
 
-    const onJoinedRoom = (data: any) => {
-      console.log('Joined room:', data);
-      setPlayerColor(data.playerColor || 'w');
-      setIsMyTurn(data.playerColor === 'w'); // White goes first
-      setGameStarted(data.playerCount === 2);
+    const onAuthenticated = (data: any) => {
+      console.log('Authenticated:', data);
+    };
+
+    const onGameState = (data: any) => {
+      console.log('Game state received:', data);
+      const chess = new Chess(data.fen);
+      gameRef.current = chess;
+      setGame(chess);
+      setBoardPosition(data.fen);
+      setPlayerColor(data.yourColor === 'white' ? 'w' : data.yourColor === 'black' ? 'b' : 'w');
+      setIsMyTurn(data.currentTurn === data.yourColor);
+      setGameStarted(data.status === 'ongoing');
+      setWhiteTimeLeft(data.whiteTimeLeft || 600000);
+      setBlackTimeLeft(data.blackTimeLeft || 600000);
+      
+      if (data.yourColor === 'white' && data.black) {
+        setOpponent(data.black);
+        setOpponentConnected(true);
+      } else if (data.yourColor === 'black' && data.white) {
+        setOpponent(data.white);
+        setOpponentConnected(true);
+      }
+      
+      // Load move history
+      if (data.moves && data.moves.length > 0) {
+        const moves: MoveRecord[] = [
+          { fen: new Chess().fen(), timestamp: Date.now() },
+          ...data.moves.map((m: any) => ({
+            fen: m.fen,
+            timestamp: new Date(m.createdAt).getTime(),
+            moveNotation: m.piece + m.to,
+            from: m.from,
+            to: m.to,
+            promotion: m.promotion,
+            timeSpent: m.timeSpent,
+          })),
+        ];
+        gameMovesRef.current = moves;
+        setGameMoves(moves);
+      }
     };
 
     const onPlayerJoined = (data: any) => {
       console.log('Player joined:', data);
       setOpponentConnected(true);
-      if (data.playerCount === 2) {
-        setGameStarted(true);
+      setOpponent({
+        id: data.odId,
+        name: data.odName,
+        rating: data.rating,
+      });
+      options?.onOpponentJoined?.();
+    };
+
+    const onPlayerDisconnected = (data: any) => {
+      console.log('Player disconnected:', data);
+      setOpponentConnected(false);
+      options?.onOpponentLeft?.();
+    };
+
+    const onGameStarted = (data: any) => {
+      console.log('Game started:', data);
+      setGameStarted(true);
+      setIsMyTurn(playerColor === 'w'); // White goes first
+      if (data.opponent) {
+        setOpponent({
+          id: data.opponent.odId,
+          name: data.opponent.odName,
+          rating: data.opponent.rating,
+        });
+        setOpponentConnected(true);
       }
     };
 
-    const onPlayerLeft = (data: any) => {
-      console.log('Player left:', data);
-      setOpponentConnected(false);
+    const onMoveMade = (data: any) => {
+      console.log('Move made:', data);
+      const chess = new Chess(data.fen);
+      gameRef.current = chess;
+      setGame(chess);
+      setBoardPosition(data.fen);
+      setIsMyTurn(data.currentTurn === (playerColor === 'w' ? 'white' : 'black'));
+      setWhiteTimeLeft(data.whiteTimeLeft);
+      setBlackTimeLeft(data.blackTimeLeft);
+      
+      // Add to move history
+      const newMove: MoveRecord = {
+        fen: data.fen,
+        timestamp: Date.now(),
+        moveNotation: data.san,
+        from: data.from,
+        to: data.to,
+        promotion: data.promotion,
+      };
+      gameMovesRef.current.push(newMove);
+      setGameMoves([...gameMovesRef.current]);
     };
 
-    const onMoveUpdate = (data: any) => {
-      console.log('Move update received:', data);
-      const gameCopy = new Chess(data.fen);
-      setGame(gameCopy);
-      setIsMyTurn(gameCopy.turn() === playerColor);
+    const onTimeUpdate = (data: any) => {
+      if (data.color === 'white') {
+        setWhiteTimeLeft(data.timeLeft);
+      } else {
+        setBlackTimeLeft(data.timeLeft);
+      }
     };
 
-    const onGameStart = (data: any) => {
-      console.log('Game started:', data);
-      setGameStarted(true);
-    };
-
-    const onGameOver = (data: any) => {
+    const onGameOver = (data: GameOverEvent) => {
       console.log('Game over:', data);
-      options?.onGameOver?.(data.winner);
+      setGameOverData(data);
+      setGameStarted(false);
+      options?.onGameOver?.(data);
+    };
+
+    const onNewMessage = (message: ChatMessage) => {
+      setChatMessages((prev) => [...prev, message]);
+    };
+
+    const onMessagesHistory = (messages: ChatMessage[]) => {
+      setChatMessages(messages);
+    };
+
+    const onDrawOffered = (data: any) => {
+      console.log('Draw offered by:', data.odName);
+    };
+
+    const onError = (data: any) => {
+      console.error('Socket error:', data.message);
     };
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
-    socket.on('joined-room', onJoinedRoom);
+    socket.on('authenticated', onAuthenticated);
+    socket.on('game-state', onGameState);
     socket.on('player-joined', onPlayerJoined);
-    socket.on('player-left', onPlayerLeft);
-    socket.on('move-update', onMoveUpdate);
-    socket.on('game-start', onGameStart);
+    socket.on('player-disconnected', onPlayerDisconnected);
+    socket.on('game-started', onGameStarted);
+    socket.on('move-made', onMoveMade);
+    socket.on('time-update', onTimeUpdate);
     socket.on('game-over', onGameOver);
+    socket.on('new-message', onNewMessage);
+    socket.on('messages-history', onMessagesHistory);
+    socket.on('draw-offered', onDrawOffered);
+    socket.on('error', onError);
 
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
-      socket.off('joined-room', onJoinedRoom);
+      socket.off('authenticated', onAuthenticated);
+      socket.off('game-state', onGameState);
       socket.off('player-joined', onPlayerJoined);
-      socket.off('player-left', onPlayerLeft);
-      socket.off('move-update', onMoveUpdate);
-      socket.off('game-start', onGameStart);
+      socket.off('player-disconnected', onPlayerDisconnected);
+      socket.off('game-started', onGameStarted);
+      socket.off('move-made', onMoveMade);
+      socket.off('time-update', onTimeUpdate);
       socket.off('game-over', onGameOver);
+      socket.off('new-message', onNewMessage);
+      socket.off('messages-history', onMessagesHistory);
+      socket.off('draw-offered', onDrawOffered);
+      socket.off('error', onError);
       socket.disconnect();
     };
-  }, [options?.gameId, options?.playerId, options?.serverUrl, playerColor, options]);
-
-  // Update the game ref whenever game state changes
-  useEffect(() => {
-    gameRef.current = game;
-    // Add position to history if it's a new move
-    const currentFen = game.fen();
-
-    if (
-      gameMovesRef.current.length === 0 ||
-      gameMovesRef.current[gameMovesRef.current.length - 1].fen !== currentFen
-    ) {
-      const history = game.history({ verbose: true });
-      const lastMove = history.length > 0 ? history[history.length - 1] : null;
-      const moveNotation = lastMove ? lastMove.san : undefined;
-
-      const newMoveRecord: MoveRecord = {
-        fen: currentFen,
-        timestamp: Date.now(),
-        moveNotation,
-        from: lastMove?.from,
-        to: lastMove?.to,
-        promotion: lastMove?.promotion as "q" | "r" | "b" | "n" | undefined,
-      };
-
-      gameMovesRef.current.push(newMoveRecord);
-      setGameMoves([...gameMovesRef.current]);
-    }
-
-    // Only update the board position if we're not viewing history
-    if (!viewingHistory) {
-      setBoardPosition(currentFen);
-    }
-  }, [game, viewingHistory]);
+  }, [options?.gameId, options?.inviteCode, options?.userId, options?.userName, options?.serverUrl, playerColor]);
 
   // Handle chess moves
   const onDrop = useCallback(
     (sourceSquare: Square, targetSquare: Square) => {
-      // Don't allow moves if it's not our turn or we're viewing history
-      if (!isMyTurn || viewingHistory || !gameStarted) {
+      if (!isMyTurn || viewingHistory || !gameStarted || gameOverData) {
         return false;
       }
 
@@ -167,20 +289,23 @@ export default function useOnlineGame(options?: UseOnlineGameOptions) {
         const move = gameCopy.move({
           from: sourceSquare,
           to: targetSquare,
-          promotion: "q", // Always promote to queen for simplicity
+          promotion: "q",
         });
 
         if (move) {
+          // Optimistically update local state
+          gameRef.current = gameCopy;
           setGame(gameCopy);
-          setIsMyTurn(false); // It's no longer our turn
+          setBoardPosition(gameCopy.fen());
+          setIsMyTurn(false);
 
           // Send move to server
-          if (socketRef.current) {
-            socketRef.current.emit('chess-move', {
-              gameId: options?.gameId || 'default-game',
-              playerId: options?.playerId || 'player-1',
-              move: move.san,
-              fen: gameCopy.fen()
+          if (socketRef.current && options?.gameId) {
+            socketRef.current.emit('make-move', {
+              gameId: options.gameId,
+              from: sourceSquare,
+              to: targetSquare,
+              promotion: move.promotion,
             });
           }
 
@@ -193,53 +318,58 @@ export default function useOnlineGame(options?: UseOnlineGameOptions) {
 
       return false;
     },
-    [game, isMyTurn, viewingHistory, gameStarted, options?.gameId, options?.playerId]
+    [game, isMyTurn, viewingHistory, gameStarted, gameOverData, options?.gameId]
   );
 
-  // Reset game
-  const resetGame = useCallback(() => {
-    const newGame = new Chess();
-    setGame(newGame);
-    setViewingHistory(false);
-    setViewingMoveIndex(-1);
-    gameMovesRef.current = [
-      {
-        fen: newGame.fen(),
-        timestamp: Date.now(),
-        moveNotation: undefined,
-        from: undefined,
-        to: undefined,
-        promotion: undefined,
-      },
-    ];
-    setGameMoves([...gameMovesRef.current]);
-    setIsMyTurn(playerColor === 'w'); // White goes first
-  }, [playerColor]);
+  // Send chat message
+  const sendMessage = useCallback((message: string) => {
+    if (socketRef.current && options?.gameId) {
+      socketRef.current.emit('send-message', {
+        gameId: options.gameId,
+        message,
+      });
+    }
+  }, [options?.gameId]);
 
-  // Switch color
-  const switchColor = useCallback(() => {
-    const newColor = playerColor === "w" ? "b" : "w";
-    setPlayerColor(newColor);
-    setIsMyTurn(newColor === 'w'); // White goes first
-    resetGame();
-  }, [playerColor, resetGame]);
+  // Resign game
+  const resign = useCallback(() => {
+    if (socketRef.current && options?.gameId) {
+      socketRef.current.emit('resign', { gameId: options.gameId });
+    }
+  }, [options?.gameId]);
+
+  // Offer draw
+  const offerDraw = useCallback(() => {
+    if (socketRef.current && options?.gameId) {
+      socketRef.current.emit('offer-draw', { gameId: options.gameId });
+    }
+  }, [options?.gameId]);
+
+  // Accept draw
+  const acceptDraw = useCallback(() => {
+    if (socketRef.current && options?.gameId) {
+      socketRef.current.emit('accept-draw', { gameId: options.gameId });
+    }
+  }, [options?.gameId]);
+
+  // Decline draw
+  const declineDraw = useCallback(() => {
+    if (socketRef.current && options?.gameId) {
+      socketRef.current.emit('decline-draw', { gameId: options.gameId });
+    }
+  }, [options?.gameId]);
 
   // Handle move click for history viewing
-  const handleMoveClick = useCallback(
-    (index: number) => {
-      if (index < 0 || index >= gameMovesRef.current.length) {
-        return;
-      }
+  const handleMoveClick = useCallback((index: number) => {
+    if (index < 0 || index >= gameMovesRef.current.length) return;
 
-      const targetMove = gameMovesRef.current[index];
-      const newGame = new Chess(targetMove.fen);
-      setGame(newGame);
-      setViewingHistory(true);
-      setViewingMoveIndex(index);
-      setBoardPosition(targetMove.fen);
-    },
-    []
-  );
+    const targetMove = gameMovesRef.current[index];
+    const newGame = new Chess(targetMove.fen);
+    setGame(newGame);
+    setViewingHistory(true);
+    setViewingMoveIndex(index);
+    setBoardPosition(targetMove.fen);
+  }, []);
 
   // Return to current position
   const returnToCurrentPosition = useCallback(() => {
@@ -263,18 +393,8 @@ export default function useOnlineGame(options?: UseOnlineGameOptions) {
     []
   );
 
-  // Test socket connection
-  const testSocketConnection = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.emit('test-message', {
-        playerId: options?.playerId || 'player-1',
-        message: 'Hello from chess client!',
-        gameId: options?.gameId || 'default-game'
-      });
-    }
-  }, [options?.playerId, options?.gameId]);
-
   return {
+    // Game state
     game,
     boardPosition,
     gameMoves,
@@ -282,15 +402,32 @@ export default function useOnlineGame(options?: UseOnlineGameOptions) {
     viewingHistory,
     viewingMoveIndex,
     boardStyles,
-    onDrop,
-    resetGame,
-    switchColor,
-    handleMoveClick,
-    returnToCurrentPosition,
+    
+    // Connection state
     isConnected,
     isMyTurn,
     opponentConnected,
     gameStarted,
-    testSocketConnection,
+    opponent,
+    
+    // Timer state
+    whiteTimeLeft,
+    blackTimeLeft,
+    
+    // Chat state
+    chatMessages,
+    
+    // Game over state
+    gameOverData,
+    
+    // Actions
+    onDrop,
+    handleMoveClick,
+    returnToCurrentPosition,
+    sendMessage,
+    resign,
+    offerDraw,
+    acceptDraw,
+    declineDraw,
   };
 }

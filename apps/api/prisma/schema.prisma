@@ -20,57 +20,111 @@ model User {
   name          String?
   password      String? // Will be null if user logs in via Google
   googleId      String?  @unique // Google OAuth ID
+  googleProfile Json? // Store additional Google profile data
   picture       String? // Profile picture URL
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // You can add more relations here as needed
-  // For example: games      Game[]
-  player1 Game[] @relation("player1")
-  player2 Game[] @relation("player2")
+  // Rating & Stats
+  rating      Int @default(1200)
+  gamesPlayed Int @default(0)
+  wins        Int @default(0)
+  losses      Int @default(0)
+  draws       Int @default(0)
+
+  // Relations
+  player1Games  Game[]        @relation("player1")
+  player2Games  Game[]        @relation("player2")
+  chatMessages  ChatMessage[]
+  ratingHistory RatingHistory[]
 }
 
 model Game {
-  id Int @id @default(autoincrement())
+  id           Int        @id @default(autoincrement())
 
-  player1_id Int
-  player1    User? @relation("player1", fields: [player1_id], references: [id])
-  player2_id Int
-  player2    User? @relation("player2", fields: [player2_id], references: [id])
+  player1_id   Int
+  player1      User?      @relation("player1", fields: [player1_id], references: [id])
+  player2_id   Int?
+  player2      User?      @relation("player2", fields: [player2_id], references: [id])
 
   computerSide Side?
-  isComputer   Boolean @default(false)
+  isComputer   Boolean    @default(false)
   winnerId     Int?
+ 
+  status       GameStatus @default(ongoing)
+  boardStatus  String
 
-  status      GameStatus @default(ongoing)
-  boardStatus String
+  // Invite system
+  inviteCode   String?    @unique
+  isPrivate    Boolean    @default(false)
 
-  createdAt  DateTime @default(now())
-  lastMoveAt DateTime @updatedAt
-  moves      Move[]
+  // Timer settings
+  timeControl     TimeControl?
+  initialTime     Int?     // Initial time in seconds
+  increment       Int?     // Increment per move in seconds
+  player1TimeLeft Int?     // Remaining time for player 1 in milliseconds
+  player2TimeLeft Int?     // Remaining time for player 2 in milliseconds
+  lastTimerUpdate DateTime? // Last time the timer was updated
+
+  createdAt    DateTime   @default(now())
+  lastMoveAt   DateTime   @updatedAt
+  
+  moves        Move[]
+  chatMessages ChatMessage[]
 
   @@index([player1_id])
   @@index([player2_id])
+  @@index([inviteCode])
+  @@index([status])
 }
 
 model Move {
-  id         Int     @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   gameId     Int
-  game       Game    @relation(fields: [gameId], references: [id])
+  game       Game     @relation(fields: [gameId], references: [id])
   moveNumber Int
   from       String
   to         String
   piece      String
   promotion  String?
-  capture    Boolean @default(false)
-  check      Boolean @default(false)
-  checkmate  Boolean @default(false)
+  capture    Boolean  @default(false)
+  check      Boolean  @default(false)
+  checkmate  Boolean  @default(false)
   fen        String
-
-  createdAt DateTime @default(now())
+  
+  // Timer snapshot at move time
+  timeSpent  Int?     // Time spent on this move in milliseconds
+  
+  createdAt  DateTime @default(now())
 
   @@index([gameId])
   @@index([gameId, moveNumber])
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  game      Game     @relation(fields: [gameId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([gameId])
+  @@index([gameId, createdAt])
+}
+
+model RatingHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  gameId    Int?     // Reference to the game that caused the rating change
+  change    Int      // +/- rating change
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, createdAt])
 }
 
 // which side player playing.
@@ -80,9 +134,23 @@ enum Side {
 }
 
 enum GameStatus {
+  waiting    // Waiting for opponent (for online games)
   ongoing
   white_won
   black_won
   draw
   resigned
+  timeout    // Game ended due to time
+  abandoned  // Player disconnected
+}
+
+enum TimeControl {
+  bullet_1min
+  bullet_2min
+  blitz_3min
+  blitz_5min
+  rapid_10min
+  rapid_15min
+  rapid_30min
+  classical_60min
 }
