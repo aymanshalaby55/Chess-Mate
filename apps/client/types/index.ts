@@ -233,7 +233,6 @@ export interface UseMoveHistoryProps {
   gameRef: React.MutableRefObject<Chess>;
   viewingHistory: boolean;
   setBoardPosition: React.Dispatch<React.SetStateAction<string>>;
-  setGameMoves: React.Dispatch<React.SetStateAction<MoveRecord[]>>;
 }
 
 export interface MoveHistoryState {
@@ -243,6 +242,7 @@ export interface MoveHistoryState {
   handleMoveClick: (moveIndex: number) => void;
   returnToCurrentPosition: () => void;
   gameMovesRef: React.MutableRefObject<MoveRecord[]>;
+  setGameMoves: React.Dispatch<React.SetStateAction<MoveRecord[]>>;
 }
 
 // Move Handler

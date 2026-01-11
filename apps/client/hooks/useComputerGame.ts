@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { Chess, Square, Color } from "chess.js";
-import Engine from "@/utils/Engine";
-import { ChessMove, MoveRecord, UseComputerGameOptions } from "@/types";
+import { useState, useCallback } from "react";
+import { Chess, Color, Square } from "chess.js";
+import { UseComputerGameOptions } from "@/types";
+import useChessGame from "./useChessGame";
+import useChessEngine from "./useChessEngine";
+import useMoveHandler from "./useMoveHandler";
+import useGameControls from "./useGameControls";
+import useMoveHistory from "./useMoveHistory";
 
 export interface ComputerGameState {
-  game: any; // Chess instance
+  game: Chess; // Chess instance
   boardPosition: string;
   isEngineThinking: boolean;
   playerColor: Color;
@@ -109,8 +113,8 @@ export default function useComputerGame(
   const {
     gameMoves,
     viewingMoveIndex,
-    handleMoveClick,
-    returnToCurrentPosition,
+    handleMoveClick: handleMoveClickInternal,
+    returnToCurrentPosition: returnToCurrentPositionInternal,
     gameMovesRef,
     setGameMoves,
   } = useMoveHistory({
@@ -119,6 +123,21 @@ export default function useComputerGame(
     viewingHistory,
     setBoardPosition,
   });
+
+  // Wrap handleMoveClick to set viewingHistory
+  const handleMoveClick = useCallback(
+    (moveIndex: number) => {
+      setViewingHistory(true);
+      handleMoveClickInternal(moveIndex);
+    },
+    [handleMoveClickInternal]
+  );
+
+  // Wrap returnToCurrentPosition to clear viewingHistory
+  const returnToCurrentPosition = useCallback(() => {
+    setViewingHistory(false);
+    returnToCurrentPositionInternal();
+  }, [returnToCurrentPositionInternal]);
 
   const { resetGame, switchColor, exportGameMoves } = useGameControls({
     gameRef,
@@ -133,7 +152,12 @@ export default function useComputerGame(
     setGameMoves,
   });
 
-  // console.log("gameMoves", gameMoves);
+  // Provide boardStyles default object
+  const boardStyles = {
+    customDarkSquareStyle: { backgroundColor: "#739552" }, // greenish
+    customLightSquareStyle: { backgroundColor: "#EBECD0" }, // beige
+    animationDuration: 200,
+  };
 
   return {
     game,

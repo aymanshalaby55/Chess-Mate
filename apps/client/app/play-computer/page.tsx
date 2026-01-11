@@ -1,7 +1,6 @@
 'use client';
 
-import { useDeferredValue, useState } from 'react';
-import { Square } from 'chess.js';
+import { useDeferredValue } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import useComputerGame from '@/hooks/useComputerGame';
@@ -9,6 +8,8 @@ import FullMoveHistory from '@/components/shared/TimelineMoveHistory';
 import ChessboardContainer from '@/components/shared/ChessBoardContainer';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { toast } from 'sonner';
+import { usePossiableMoves } from '@/hooks/usePossiableMoves';
 
 export default function PlayComputer() {
   const {
@@ -29,15 +30,21 @@ export default function PlayComputer() {
       if (winner === 'draw') {
         alert('Game ended in a draw');
       } else {
-        toast.success(`${winner === "w" ? "White" : "Black"} wins the game!`, {
+        const winnerColor = winner === 'white' ? 'w' : 'b';
+        toast.success(`${winner === "white" ? "White" : "Black"} wins the game!`, {
           style: {
             color: "#fff",
-            backgroundColor: winner === playerColor ? "#4caf50" : "#50a36c", // green or red
+            backgroundColor: winnerColor === playerColor ? "#4caf50" : "#50a36c", // green or red
             border: "1px solid #333",
           },
         });
       }
     },
+  });
+
+  const { selectedSquare, possibleMoves, handleSquareClick } = usePossiableMoves({
+    game,
+    onDrop,
   });
   const { data: userData } = useQuery({
     queryKey: ['userData'],
@@ -82,8 +89,6 @@ export default function PlayComputer() {
                 <button
                   onClick={() => {
                     resetGame();
-                    setSelectedSquare(null);
-                    setPossibleMoves({});
                   }}
                   className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md transition-colors"
                 >
@@ -92,8 +97,6 @@ export default function PlayComputer() {
                 <button
                   onClick={() => {
                     switchColor();
-                    setSelectedSquare(null);
-                    setPossibleMoves({});
                   }}
                   className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-md transition-colors"
                 >
@@ -105,8 +108,6 @@ export default function PlayComputer() {
                 <button
                   onClick={() => {
                     returnToCurrentPosition();
-                    setSelectedSquare(null);
-                    setPossibleMoves({});
                   }}
                   disabled={!viewingHistory}
                   className={`px-4 py-2 ${

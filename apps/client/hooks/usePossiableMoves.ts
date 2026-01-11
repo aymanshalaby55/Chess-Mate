@@ -1,7 +1,12 @@
-import { Square } from "chess.js";
+import { Square, Chess } from "chess.js";
 import { useState } from "react";
 
-export function usePossiableMoves({ game, onDrop }) {
+interface UsePossiableMovesProps {
+  game: Chess;
+  onDrop: (sourceSquare: Square, targetSquare: Square) => boolean;
+}
+
+export function usePossiableMoves({ game, onDrop }: UsePossiableMovesProps) {
   // State for tracking selected square and possible moves
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<Record<string, Square[]>>(

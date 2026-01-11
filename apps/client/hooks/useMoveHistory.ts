@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Chess } from "chess.js";
+import { Chess, Square } from "chess.js";
 import { MoveRecord, UseMoveHistoryProps, MoveHistoryState } from "@/types";
 
 export default function useMoveHistory({
@@ -41,8 +41,8 @@ export default function useMoveHistory({
         fen: currentFen,
         timestamp: Date.now(),
         moveNotation,
-        from: lastMove?.from,
-        to: lastMove?.to,
+        from: lastMove?.from as Square | undefined,
+        to: lastMove?.to as Square | undefined,
         promotion: lastMove?.promotion as "q" | "r" | "b" | "n" | undefined,
       };
 
@@ -86,5 +86,6 @@ export default function useMoveHistory({
     handleMoveClick,
     returnToCurrentPosition,
     gameMovesRef,
+    setGameMoves,
   };
 }
