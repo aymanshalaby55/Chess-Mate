@@ -1,9 +1,14 @@
 'use client';
 
-import { FullMoveHistoryProps } from '@/types';
+import { useRef, useCallback } from 'react';
+import { FullMoveHistoryProps, MoveRecord } from '@/types';
 import React from 'react';
 
-
+// Format move notation for display
+const formatMoveNotation = (notation?: string): string => {
+  if (!notation) return '...';
+  return notation;
+};
 
 const FullMoveHistory: React.FC<FullMoveHistoryProps> = ({
   game,
