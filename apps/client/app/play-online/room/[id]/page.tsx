@@ -57,7 +57,6 @@ export default function RoomPage({ params }: RoomPageProps) {
     returnToCurrentPosition,
     isConnected,
     isMyTurn,
-    opponentConnected,
     gameStarted,
     opponent,
     whiteTimeLeft,
@@ -165,7 +164,7 @@ export default function RoomPage({ params }: RoomPageProps) {
       <main className="container mx-auto max-w-7xl px-4 py-8">
         <div className="mb-6">
           <Link
-            href="/play-online"
+            href="/dashboard"
             className="text-green-400 flex items-center hover:underline text-sm"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
@@ -385,7 +384,7 @@ export default function RoomPage({ params }: RoomPageProps) {
         onClose={() => setShowGameOver(false)}
         onNewGame={() => {
           if (typeof window !== 'undefined') {
-            window.location.href = '/play-online';
+            window.location.href = '/dashboard';
           }
         }}
         gameOverData={gameOverData}

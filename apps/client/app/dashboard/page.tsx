@@ -16,6 +16,8 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { TimeControl, TIME_CONTROL_LABELS } from "@/types";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import useMatchmaking from "@/hooks/useMatchmaking";
 
 // Define type for game mode
 type GameMode = "matchmaking" | "private" | null;
@@ -41,53 +43,8 @@ const TIME_CONTROLS: {
   },
 ];
 
-// Dummy implementation for matchmaking state, replace with actual implementation or logic
-function useMatchmaking({
-  onGameMatched,
-}: {
-  onGameMatched: (game: { gameId: number }) => void;
-}) {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchStart, setSearchStart] = useState<Date | null>(null);
-
-  // Used to count seconds since search started
-  const [formattedSearchTime, setFormattedSearchTime] = useState("00:00");
-  useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
-    if (isSearching && searchStart) {
-      interval = setInterval(() => {
-        const diff = Math.floor((Date.now() - searchStart.getTime()) / 1000);
-        const min = String(Math.floor(diff / 60)).padStart(2, "0");
-        const sec = String(diff % 60).padStart(2, "0");
-        setFormattedSearchTime(`${min}:${sec}`);
-      }, 1000);
-    } else {
-      setFormattedSearchTime("00:00");
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isSearching, searchStart]);
-
-  function startSearching() {
-    setIsSearching(true);
-    setSearchStart(new Date());
-    // Simulate a match found after 3s
-    setTimeout(() => {
-      setIsSearching(false);
-      setSearchStart(null);
-      onGameMatched?.({ gameId: 1 });
-    }, 300000); // 5 min, adjust or remove for real code
-  }
-  function stopSearching() {
-    setIsSearching(false);
-    setSearchStart(null);
-    setFormattedSearchTime("00:00");
-  }
-  return { isSearching, formattedSearchTime, startSearching, stopSearching };
-}
-
 export default function DashboardPage() {
+  const router = useRouter();
   const [gameMode, setGameMode] = useState<GameMode>(null);
   const [selectedTimeControl, setSelectedTimeControl] =
     useState<TimeControl>("blitz_5min");
@@ -110,34 +67,42 @@ export default function DashboardPage() {
   const user = userData?.data;
 
   // Matchmaking hook
-  const { isSearching, formattedSearchTime, startSearching, stopSearching } =
-    useMatchmaking({
-      onGameMatched: () => {
-        // For now, just alert, but on actual app, redirect to game
-        // router.push(`/play-online/room/${game.gameId}`);
-        alert("You have been matched! (Replace with navigation logic)");
-      },
-    });
+  const {
+    isSearching,
+    formattedSearchTime,
+    startSearching,
+    stopSearching,
+  } = useMatchmaking({
+    userId: user?.id || 0,
+    userName: user?.name || "Guest",
+    userRating: user?.rating || 1200,
+    onGameMatched: (game) => {
+      router.push(`/play-online/room/${game.gameId}`);
+    },
+  });
 
   // Private game creation mutation
   const createPrivateGame = useMutation({
-    mutationFn: (gameData: {
-      timeControl: TimeControl;
-      color: "white" | "black" | "random";
-    }) => api.post("/games/create-private", gameData),
+    mutationFn: async () => {
+      const response = await api.post("/games/private", {
+        side: selectedColor,
+        timeControl: selectedTimeControl,
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      router.push(`/play-online/room/${data.id}?invite=${data.inviteCode}`);
+    },
   });
 
   // Create private game handler
   const handleCreatePrivateGame = () => {
-    createPrivateGame.mutate({
-      timeControl: selectedTimeControl,
-      color: selectedColor,
-    });
+    createPrivateGame.mutate();
   };
 
   // Start matchmaking handler
   const handleStartMatchmaking = () => {
-    startSearching();
+    startSearching(selectedTimeControl);
   };
 
   return (
